@@ -1,0 +1,15 @@
+{
+    "auth_mode": "local",
+    "local_admin": {
+        "enabled": true,
+        "username": "admin",
+        "password_hash": ""
+    },
+    "ldap": {
+        "server": "domain.local",
+        "port": 389,
+        "domain": "domain.local",
+        "base_dn": "DC=domain,DC=local",
+        "user_group": "CN=IT,OU=GROUPS,OU=DOMAIN,DC=domain,DC=local"
+    }
+}

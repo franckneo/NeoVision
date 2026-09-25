@@ -1,0 +1,12 @@
+{
+    "sender_name": "NeoVision Supervision",
+    "from_email": "supervision@example.com",
+    "reply_to": "supervision@example.com",
+    "smtp_mode": "local",
+    "smtp_host": "127.0.0.1",
+    "smtp_port": 25,
+    "smtp_auth": false,
+    "smtp_user": "",
+    "smtp_pass": "",
+    "smtp_secure": "none"
+}
