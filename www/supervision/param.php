@@ -847,7 +847,7 @@ function toggleMailMethodFields() {
 }
 
 document.getElementById('btnSaveMailConfig')?.addEventListener('click', function() {
-    const payload = {
+    const payload = new URLSearchParams({
         action: 'save_mail_config',
         from_name: document.getElementById('mail_from_name')?.value.trim() || '',
         from_email: document.getElementById('mail_from_email')?.value.trim() || '',
@@ -857,16 +857,18 @@ document.getElementById('btnSaveMailConfig')?.addEventListener('click', function
         smtp_secure: document.getElementById('mail_smtp_secure')?.value || 'none',
         smtp_user: document.getElementById('mail_smtp_user')?.value.trim() || '',
         smtp_pass: document.getElementById('mail_smtp_pass')?.value || ''
-    };
-    fetch('ajax_notification.php', {
+    });
+
+    fetch('param.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: payload.toString()
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
             alert(t('mail_saved_success', 'Configuration e-mail enregistrée avec succès.'));
+            location.reload();
         } else {
             alert('Erreur : ' + (data.error || 'Erreur inconnue'));
         }
@@ -875,24 +877,34 @@ document.getElementById('btnSaveMailConfig')?.addEventListener('click', function
 });
 
 function testMailConfig() {
-    const testTo = prompt('Saisir l\'adresse email destinataire pour le test :', '');
-    if (!testTo) return;
+    const recipient = document.getElementById('mail_test_recipient')?.value.trim();
+    if (!recipient) {
+        alert(t('mail_test_recipient_required', 'Veuillez saisir une adresse e-mail destinataire.'));
+        return;
+    }
 
-    fetch('ajax_notification.php', {
+    const payload = new URLSearchParams({
+        action: 'test_mail',
+        to: recipient
+    });
+
+    fetch('param.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'test_mail_config', recipient: testTo })
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: payload.toString()
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('E-mail de test envoyé avec succès !');
+            alert(t('mail_test_success', 'E-mail de test envoyé avec succès.'));
         } else {
-            alert('Échec de l\'envoi : ' + (data.error || 'Erreur inconnue'));
+            alert((t('mail_test_failed', 'Échec de l\'envoi : ')) + (data.error || 'Erreur inconnue'));
         }
     })
     .catch(err => alert('Erreur réseau : ' + err.message));
 }
+
+document.getElementById('btnTestMail')?.addEventListener('click', testMailConfig);
 
 document.getElementById('btnSaveAccounts')?.addEventListener('click',function(){
     const localUser=document.getElementById('inputLocalSupervisorUser').value.trim(),
