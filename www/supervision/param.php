@@ -832,28 +832,28 @@ function addWinrmRow(){
 }
 
 function toggleMailMethodFields() {
-    const method = document.getElementById('mailMethod')?.value;
-    const fields = document.getElementById('smtpFields');
-    if (fields) fields.style.display = (method === 'smtp') ? '' : 'none';
+    const method = document.getElementById('mail_method')?.value;
+    const rows = document.querySelectorAll('.smtp-field');
+    rows.forEach(r => r.style.display = (method === 'smtp') ? '' : 'none');
 }
 
-document.getElementById('btnSaveMail')?.addEventListener('click', function() {
-    const payload = {
+document.getElementById('btnSaveMailConfig')?.addEventListener('click', function() {
+    const payload = new URLSearchParams({
         action: 'save_mail_config',
-        from_name: document.getElementById('mailSenderName')?.value.trim() || '',
-        from_email: document.getElementById('mailSenderAddress')?.value.trim() || '',
-        method: document.getElementById('mailMethod')?.value || 'mail',
-        smtp_host: document.getElementById('mailSmtpHost')?.value.trim() || '',
-        smtp_port: document.getElementById('mailSmtpPort')?.value.trim() || '25',
-        smtp_secure: document.getElementById('mailSmtpSecure')?.value || 'none',
-        smtp_user: document.getElementById('mailSmtpUser')?.value.trim() || '',
-        smtp_pass: document.getElementById('mailSmtpPass')?.value || ''
-    };
+        from_name: document.getElementById('mail_from_name')?.value.trim() || '',
+        from_email: document.getElementById('mail_from_email')?.value.trim() || '',
+        method: document.getElementById('mail_method')?.value || 'mail',
+        smtp_host: document.getElementById('mail_smtp_host')?.value.trim() || '',
+        smtp_port: document.getElementById('mail_smtp_port')?.value.trim() || '25',
+        smtp_secure: document.getElementById('mail_smtp_secure')?.value || 'none',
+        smtp_user: document.getElementById('mail_smtp_user')?.value.trim() || '',
+        smtp_pass: document.getElementById('mail_smtp_pass')?.value || ''
+    });
 
-    fetch('ajax_notification.php', {
+    fetch('param.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: payload.toString()
     })
     .then(r => r.json())
     .then(data => {
@@ -868,30 +868,17 @@ document.getElementById('btnSaveMail')?.addEventListener('click', function() {
 });
 
 function testMailConfig() {
-    const testTo = prompt(t('mail_test_recipient', 'Saisir l\'adresse email destinataire pour le test :'), '');
-    if (!testTo) return;
-
-    fetch('ajax_notification.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'test_mail_config', recipient: testTo })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert(t('mail_test_success', 'E-mail de test envoyé avec succès !'));
-        } else {
-            alert(t('msg_error', 'Erreur : ') + (data.error || t('msg_unknown_error', 'Erreur inconnue')));
-        }
-    })
-    .catch(err => alert(t('msg_network_error', 'Erreur réseau') + ' : ' + err.message));
-}
-
-function testMailConfig() {
     const recipient = document.getElementById('mail_test_recipient')?.value.trim();
     if (!recipient) {
         alert(t('mail_test_recipient_required', 'Veuillez saisir une adresse e-mail destinataire.'));
         return;
+    }
+
+    const btn = document.getElementById('btnTestMail');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ' + t('mail_testing', 'Envoi en cours...');
     }
 
     const payload = new URLSearchParams({
@@ -906,13 +893,23 @@ function testMailConfig() {
     })
     .then(r => r.json())
     .then(data => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
         if (data.success) {
-            alert(t('mail_test_success', 'E-mail de test envoyé avec succès.'));
+            alert(t('mail_test_success', 'E-mail de test envoyé avec succès !'));
         } else {
-            alert((t('mail_test_failed', 'Échec de l\'envoi : ')) + (data.error || 'Erreur inconnue'));
+            alert(t('msg_error', 'Erreur : ') + (data.error || t('msg_unknown_error', 'Erreur inconnue')));
         }
     })
-    .catch(err => alert('Erreur réseau : ' + err.message));
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        alert(t('msg_network_error', 'Erreur réseau') + ' : ' + err.message);
+    });
 }
 
 document.getElementById('btnTestMail')?.addEventListener('click', testMailConfig);
