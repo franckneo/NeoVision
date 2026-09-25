@@ -836,7 +836,7 @@ function toggleMailMethodFields() {
     const rows = document.querySelectorAll('.smtp-field');
     rows.forEach(r => r.style.display = (method === 'smtp') ? '' : 'none');
 }
-
+document.getElementById('mail_method')?.addEventListener('change', toggleMailMethodFields);
 document.getElementById('btnSaveMailConfig')?.addEventListener('click', function() {
     const payload = new URLSearchParams({
         action: 'save_mail_config',
@@ -873,14 +873,12 @@ function testMailConfig() {
         alert(t('mail_test_recipient_required', 'Veuillez saisir une adresse e-mail destinataire.'));
         return;
     }
-
     const btn = document.getElementById('btnTestMail');
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ' + t('mail_testing', 'Envoi en cours...');
     }
-
     const payload = new URLSearchParams({
         action: 'test_mail',
         to: recipient
