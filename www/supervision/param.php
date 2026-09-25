@@ -452,68 +452,121 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
             <div class="section-header-row">
                 <h1 style="margin:0;"><?= __('mail_config_title', "Configuration de l'expéditeur et des e-mails") ?></h1>
                 <div class="section-header-actions">
-                    <button type="button" class="btn btn-gray" onclick="location.reload();"><?= __('btn_cancel', 'Annuler') ?></button>
-                    <button type="button" id="btnSaveMailConfig" class="btn btn-red"><?= __('btn_save', 'Enregistrer') ?></button>
+                    <button type="submit" form="form_mail" class="btn btn-primary" style="margin:0;">
+                        <i class="fa fa-save"></i> <?= __('save_mail_config', "Enregistrer la configuration") ?>
+                    </button>
                 </div>
             </div>
-            <p><?= __('mail_config_desc', "Configurez l'adresse d'expédition et la méthode d'envoi utilisée pour les alertes et notifications.") ?></p>
+            <form id="form_mail" method="POST" action="ajax_notifications.php?action=save_mail_config">
+                <input type="hidden" name="active_tab" value="mail">
 
-            <h3 style="margin-top:20px;"><?= __('mail_sender_header', 'Expéditeur') ?></h3>
-            <table class="table-servers-config" style="max-width:700px;">
-                <tr>
-                    <td style="width:220px; font-weight:bold;"><?= __('mail_sender_name', "Nom de l'expéditeur") ?></td>
-                    <td><input type="text" id="mail_from_name" class="table-input" value="<?= htmlspecialchars($mailConfig['from_name'] ?? 'NeoVision Supervision') ?>"></td>
-                </tr>
-                <tr>
-                    <td style="font-weight:bold;"><?= __('mail_sender_email', "Adresse e-mail d'expédition") ?></td>
-                    <td><input type="email" id="mail_from_email" class="table-input" value="<?= htmlspecialchars($mailConfig['from_email'] ?? 'supervision@domaine.local') ?>"></td>
-                </tr>
-            </table>
-
-            <h3 style="margin-top:25px;"><?= __('mail_method_header', "Méthode d'envoi") ?></h3>
-            <table class="table-servers-config" style="max-width:700px;">
-                <tr>
-                    <td style="width:220px; font-weight:bold;"><?= __('mail_method_header', "Méthode") ?></td>
-                    <td>
-                        <select id="mail_method" class="table-input" onchange="toggleMailMethodFields()">
-                            <option value="mail" <?= ($mailConfig['method'] ?? 'mail') === 'mail' ? 'selected' : '' ?>><?= __('mail_method_php', 'PHP mail() standard (Sendmail / Postfix local)') ?></option>
-                            <option value="smtp" <?= ($mailConfig['method'] ?? 'mail') === 'smtp' ? 'selected' : '' ?>><?= __('mail_method_smtp', 'Serveur SMTP personnalisé') ?></option>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="mail_sender_email"><?= __('sender_email', "Adresse e-mail de l'expéditeur") ?> :</label>
+                        <input type="email" id="mail_sender_email" name="mail_sender_email" class="form-control"
+                               value="<?= htmlspecialchars($mail_config['sender_email'] ?? '') ?>"
+                               placeholder="ex: supervision@domaine.fr" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="mail_sender_name"><?= __('sender_name', "Nom affiché de l'expéditeur") ?> :</label>
+                        <input type="text" id="mail_sender_name" name="mail_sender_name" class="form-control"
+                               value="<?= htmlspecialchars($mail_config['sender_name'] ?? '') ?>"
+                               placeholder="ex: NeoVision Supervision">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label for="mail_method"><?= __('mail_method', "Méthode d'envoi") ?> :</label>
+                        <select id="mail_method" name="mail_method" class="form-control" onchange="toggleMailMethodFields(this.value)">
+                            <option value="smtp" <?= ($mail_config['method'] ?? '') === 'smtp' ? 'selected' : '' ?>>
+                                <?= __('mail_method_smtp', "SMTP Authentifié / Relais standard") ?>
+                            </option>
+                            <option value="office365_graph" <?= ($mail_config['method'] ?? '') === 'office365_graph' ? 'selected' : '' ?>>
+                                <?= __('mail_method_o365', "Microsoft 365 (Graph API OAuth2 - Recommandé)") ?>
+                            </option>
+                            <option value="sendmail" <?= ($mail_config['method'] ?? 'sendmail') === 'sendmail' ? 'selected' : '' ?>>
+                                <?= __('mail_method_sendmail', "Sendmail local (Linux /usr/sbin/sendmail)") ?>
+                            </option>
                         </select>
-                    </td>
-                </tr>
-                <tr class="smtp-field" style="<?= ($mailConfig['method'] ?? 'mail') === 'smtp' ? '' : 'display:none;' ?>">
-                    <td style="font-weight:bold;"><?= __('mail_smtp_host', 'Hôte SMTP') ?></td>
-                    <td><input type="text" id="mail_smtp_host" class="table-input" value="<?= htmlspecialchars($mailConfig['smtp_host'] ?? '') ?>" placeholder="ex: smtp.office365.com"></td>
-                </tr>
-                <tr class="smtp-field" style="<?= ($mailConfig['method'] ?? 'mail') === 'smtp' ? '' : 'display:none;' ?>">
-                    <td style="font-weight:bold;"><?= __('mail_smtp_port', 'Port') ?></td>
-                    <td><input type="number" id="mail_smtp_port" class="table-input" style="width:100px;" value="<?= htmlspecialchars($mailConfig['smtp_port'] ?? '587') ?>"></td>
-                </tr>
-                <tr class="smtp-field" style="<?= ($mailConfig['method'] ?? 'mail') === 'smtp' ? '' : 'display:none;' ?>">
-                    <td style="font-weight:bold;"><?= __('mail_smtp_security', 'Sécurité / Chiffrement') ?></td>
-                    <td>
-                        <select id="mail_smtp_secure" class="table-input">
-                            <option value="none" <?= ($mailConfig['smtp_secure'] ?? 'none') === 'none' ? 'selected' : '' ?>><?= __('mail_security_none', 'Aucun') ?></option>
-                            <option value="tls" <?= ($mailConfig['smtp_secure'] ?? '') === 'tls' ? 'selected' : '' ?>>TLS (STARTTLS)</option>
-                            <option value="ssl" <?= ($mailConfig['smtp_secure'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr class="smtp-field" style="<?= ($mailConfig['method'] ?? 'mail') === 'smtp' ? '' : 'display:none;' ?>">
-                    <td style="font-weight:bold;"><?= __('mail_smtp_user', 'Utilisateur SMTP') ?></td>
-                    <td><input type="text" id="mail_smtp_user" class="table-input" value="<?= htmlspecialchars($mailConfig['smtp_user'] ?? '') ?>"></td>
-                </tr>
-                <tr class="smtp-field" style="<?= ($mailConfig['method'] ?? 'mail') === 'smtp' ? '' : 'display:none;' ?>">
-                    <td style="font-weight:bold;"><?= __('mail_smtp_pass', 'Mot de passe SMTP') ?></td>
-                    <td><input type="password" id="mail_smtp_pass" class="table-input" placeholder="<?= !empty($mailConfig['smtp_pass']) ? __('mail_smtp_pass_placeholder', 'Laisser vide si inchangé') : '' ?>"></td>
-                </tr>
-            </table>
+                    </div>
+                </div>
+                <div id="section_smtp" style="display: <?= ($mail_config['method'] ?? '') === 'smtp' ? 'block' : 'none' ?>;">
+                    <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-top: 15px;"><?= __('smtp_parameters', "Paramètres SMTP") ?></h3>
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            <label for="smtp_host"><?= __('smtp_host', "Serveur SMTP") ?> :</label>
+                            <input type="text" id="smtp_host" name="smtp_host" class="form-control"
+                                   value="<?= htmlspecialchars($mail_config['smtp']['host'] ?? '') ?>"
+                                   placeholder="ex: smtp.office365.com ou smtp.gmail.com">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="smtp_port"><?= __('smtp_port', "Port") ?> :</label>
+                            <input type="number" id="smtp_port" name="smtp_port" class="form-control"
+                                   value="<?= htmlspecialchars($mail_config['smtp']['port'] ?? '587') ?>"
+                                   placeholder="587, 465 ou 25">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="smtp_security"><?= __('smtp_encryption', "Chiffrement") ?> :</label>
+                            <select id="smtp_security" name="smtp_security" class="form-control">
+                                <option value="tls" <?= ($mail_config['smtp']['security'] ?? 'tls') === 'tls' ? 'selected' : '' ?>>STARTTLS / TLS (Port 587)</option>
+                                <option value="ssl" <?= ($mail_config['smtp']['security'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL / TLS Implicite (Port 465)</option>
+                                <option value="none" <?= ($mail_config['smtp']['security'] ?? '') === 'none' ? 'selected' : '' ?>><?= __('none_clear', "Aucun (Texte brut - Déconseillé)") ?></option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="smtp_user"><?= __('smtp_username', "Nom d'utilisateur / Identifiant") ?> :</label>
+                            <input type="text" id="smtp_user" name="smtp_user" class="form-control"
+                                   value="<?= htmlspecialchars($mail_config['smtp']['user'] ?? '') ?>"
+                                   placeholder="ex: moncompte@domaine.fr">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="smtp_pass"><?= __('smtp_password', "Mot de passe SMTP / Clé API") ?> :</label>
+                            <input type="password" id="smtp_pass" name="smtp_pass" class="form-control"
+                                   value="<?= htmlspecialchars($mail_config['smtp']['pass'] ?? '') ?>"
+                                   placeholder="••••••••••••">
+                        </div>
+                    </div>
+                </div>
+                <div id="section_office365" style="display: <?= ($mail_config['method'] ?? '') === 'office365_graph' ? 'block' : 'none' ?>;">
+                    <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-top: 15px;"><?= __('o365_api_parameters', "Paramètres Microsoft Graph API") ?></h3>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="o365_tenant_id"><?= __('tenant_id', "ID du Tenant (Locataire Azure)") ?> :</label>
+                            <input type="text" id="o365_tenant_id" name="o365_tenant_id" class="form-control"
+                                   value="<?= htmlspecialchars($mail_config['office365_graph']['tenant_id'] ?? '') ?>"
+                                   placeholder="8a1b2c3d-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="o365_client_id"><?= __('client_id', "ID de l'Application (Client ID)") ?> :</label>
+                            <input type="text" id="o365_client_id" name="o365_client_id" class="form-control"
+                                   value="<?= htmlspecialchars($mail_config['office365_graph']['client_id'] ?? '') ?>"
+                                   placeholder="12345678-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="o365_client_secret"><?= __('client_secret', "Secret de l'Application (Client Secret)") ?> :</label>
+                            <input type="password" id="o365_client_secret" name="o365_client_secret" class="form-control"
+                                   value="<?= htmlspecialchars($mail_config['office365_graph']['client_secret'] ?? '') ?>"
+                                   placeholder="••••••••••••">
+                        </div>
+                    </div>
+                </div>
 
-            <h3 style="margin-top:25px;"><?= __('mail_test_header', "Test d'envoi") ?></h3>
-            <div style="display:flex; gap:10px; align-items:center; max-width:700px;">
-                <input type="email" id="mail_test_recipient" class="table-input" placeholder="<?= __('mail_test_recipient', 'Destinataire du test') ?>" style="flex:1;">
-                <button type="button" id="btnTestMail" class="btn btn-blue"><?= __('mail_btn_test', 'Envoyer un e-mail de test') ?></button>
-            </div>
+                <div class="form-row" style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                    <div class="form-group col-md-8">
+                        <label for="test_mail_recipient"><?= __('test_email_recipient', "Adresse de réception pour le test") ?> :</label>
+                        <input type="email" id="test_mail_recipient" class="form-control" placeholder="admin@domaine.fr">
+                    </div>
+                    <div class="form-group col-md-4" style="display: flex; align-items: flex-end;">
+                        <button type="button" class="btn btn-secondary" style="width: 100%; height: 38px;" onclick="testMailConnection()">
+                            <i class="fa fa-paper-plane"></i> <?= __('btn_test_mail', "Tester l'envoi") ?>
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
     <div id="view-langue" class="view-section param-view" style="<?= $activeTab === 'langue' ? '' : 'display:none;' ?>">
