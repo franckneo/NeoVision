@@ -121,20 +121,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                "Content-Type: text/plain; charset=UTF-8\r\n";
 
     if (($cfg['method'] ?? 'mail') === 'smtp') {
-        // Envoi SMTP direct par socket
         try {
             $host = $cfg['smtp_host'] ?? 'localhost';
             $port = intval($cfg['smtp_port'] ?? 587);
             $secure = $cfg['smtp_secure'] ?? 'none';
             $user = $cfg['smtp_user'] ?? '';
             $pass = $cfg['smtp_pass'] ?? '';
-
             $prefix = ($secure === 'ssl') ? 'ssl://' : '';
             $socket = @fsockopen($prefix . $host, $port, $errno, $errstr, 15);
             if (!$socket) {
                 throw new Exception("Connexion SMTP échouée sur $host:$port ($errno: $errstr)");
             }
-
             $read = function() use ($socket) {
                 $data = '';
                 while ($str = fgets($socket, 515)) {
@@ -146,11 +143,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $write = function($cmd) use ($socket) {
                 fputs($socket, $cmd . "\r\n");
             };
-
             $read();
             $write('EHLO ' . gethostname());
             $read();
-
             if ($secure === 'tls') {
                 $write('STARTTLS');
                 $read();
@@ -158,7 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $write('EHLO ' . gethostname());
                 $read();
             }
-
             if (!empty($user) && !empty($pass)) {
                 $write('AUTH LOGIN');
                 $read();
@@ -170,7 +164,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     throw new Exception("Authentification SMTP échouée : $authRes");
                 }
             }
-
             $write("MAIL FROM:<{$fromMail}>");
             $read();
             $write("RCPT TO:<{$to}>");
@@ -774,12 +767,10 @@ function savePcs() {
     const formData = new FormData();
     formData.append('action', 'save_pcs');
     formData.append('pcs_data', JSON.stringify(pcs));
-
     const btn = document.getElementById('btnSavePcs');
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '⏳ <?= __("saving", "Enregistrement...") ?>';
-
     fetch(window.location.href, {
         method: 'POST',
         body: formData
@@ -841,22 +832,22 @@ function addWinrmRow(){
 }
 
 function toggleMailMethodFields() {
-    const method = document.getElementById('mail_method')?.value;
+    const method = document.getElementById('mail_config_method')?.value;
     const rows = document.querySelectorAll('.smtp-field');
     rows.forEach(r => r.style.display = (method === 'smtp') ? '' : 'none');
 }
 
-document.getElementById('btnSaveMailConfig')?.addEventListener('click', function() {
+document.getElementById('btn-save-mail-config')?.addEventListener('click', function() {
     const payload = new URLSearchParams({
         action: 'save_mail_config',
-        from_name: document.getElementById('mail_from_name')?.value.trim() || '',
-        from_email: document.getElementById('mail_from_email')?.value.trim() || '',
-        method: document.getElementById('mail_method')?.value || 'mail',
-        smtp_host: document.getElementById('mail_smtp_host')?.value.trim() || '',
-        smtp_port: document.getElementById('mail_smtp_port')?.value.trim() || '587',
-        smtp_secure: document.getElementById('mail_smtp_secure')?.value || 'none',
-        smtp_user: document.getElementById('mail_smtp_user')?.value.trim() || '',
-        smtp_pass: document.getElementById('mail_smtp_pass')?.value || ''
+        from_name: document.getElementById('mail_config_from_name')?.value.trim() || '',
+        from_email: document.getElementById('mail_config_from_email')?.value.trim() || '',
+        method: document.getElementById('mail_config_method')?.value || 'mail',
+        smtp_host: document.getElementById('mail_config_smtp_host')?.value.trim() || '',
+        smtp_port: document.getElementById('mail_config_smtp_port')?.value.trim() || '587',
+        smtp_secure: document.getElementById('mail_config_smtp_secure')?.value || 'none',
+        smtp_user: document.getElementById('mail_config_smtp_user')?.value.trim() || '',
+        smtp_pass: document.getElementById('mail_config_smtp_pass')?.value || ''
     });
 
     fetch('param.php', {
@@ -875,6 +866,53 @@ document.getElementById('btnSaveMailConfig')?.addEventListener('click', function
     })
     .catch(err => alert('Erreur réseau : ' + err.message));
 });
+
+function testMailConfig() {
+    const recipient = document.getElementById('mail_config_test_recipient')?.value.trim();
+    if (!recipient) {
+        alert(t('mail_test_recipient_required', 'Veuillez saisir une adresse e-mail destinataire.'));
+        return;
+    }
+
+    const btn = document.getElementById('btn-test-mail-config');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ' + t('mail_testing', 'Envoi en cours...');
+    }
+
+    const payload = new URLSearchParams({
+        action: 'test_mail',
+        to: recipient
+    });
+
+    fetch('param.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: payload.toString()
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        if (data.success) {
+            alert(t('mail_test_success', 'E-mail de test envoyé avec succès.'));
+        } else {
+            alert((t('mail_test_failed', 'Échec de l\'envoi : ')) + (data.error || 'Erreur inconnue'));
+        }
+    })
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        alert('Erreur réseau : ' + err.message);
+    });
+}
+
+document.getElementById('btn-test-mail-config')?.addEventListener('click', testMailConfig);
 
 function testMailConfig() {
     const recipient = document.getElementById('mail_test_recipient')?.value.trim();
