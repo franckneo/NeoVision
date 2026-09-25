@@ -440,10 +440,10 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
 	    <button type="button" class="btn btn-blue" onclick="addPcRow()">➕ <?= __('btn_add_pc', 'Ajouter un ordinateur') ?></button>
         </div>
     </div>
-    <div id="view-mail" class="view-section param-view" style="<?= $activeTab === 'mail' ? '' : 'display:none;' ?>">
+    <div id="view-mail" class="view-section param-view <?= $activeTab === 'mail' ? '' : 'is-hidden' ?>">
         <div class="stat-card">
             <div class="section-header-row">
-                <h1 style="margin:0;"><?= __('mail_config_title', "Configuration de l'expéditeur et des e-mails") ?></h1>
+                <h1 class="mail-header-title"><?= __('mail_config_title', "Configuration de l'expéditeur et des e-mails") ?></h1>
                 <div class="section-header-actions">
                     <button type="button" class="btn btn-primary" id="btnSaveMailConfig">
                         <i class="fa fa-save"></i> <?= __('save', 'Enregistrer') ?>
@@ -468,14 +468,14 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
 
             <div class="form-group">
                 <label for="mail_method"><?= __('mail_method', "Méthode d'envoi") ?> :</label>
-                <select id="mail_method" name="mail_method" class="form-control" onchange="toggleMailMethodFields()">
+                <select id="mail_method" name="mail_method" class="form-control">
                     <option value="mail" <?= ($mail_config['method'] ?? 'mail') === 'mail' ? 'selected' : '' ?>><?= __('mail_method_php', 'Fonction PHP mail() standard') ?></option>
                     <option value="smtp" <?= ($mail_config['method'] ?? '') === 'smtp' ? 'selected' : '' ?>><?= __('mail_method_smtp', 'Serveur SMTP personnalisé') ?></option>
                     <option value="office365" <?= ($mail_config['method'] ?? '') === 'office365' ? 'selected' : '' ?>><?= __('mail_method_o365', 'Microsoft 365 / Office 365 (OAuth2 Graph)') ?></option>
                 </select>
             </div>
 
-            <div id="section_smtp" style="<?= ($mail_config['method'] ?? '') === 'smtp' ? '' : 'display:none;' ?>">
+            <div id="section_smtp" class="<?= ($mail_config['method'] ?? '') === 'smtp' ? '' : 'is-hidden' ?>">
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label for="mail_smtp_host"><?= __('smtp_host', 'Hôte SMTP') ?> :</label>
@@ -511,21 +511,21 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
                 </div>
             </div>
 
-            <div id="section_office365" style="<?= ($mail_config['method'] ?? '') === 'office365' ? '' : 'display:none;' ?>">
+            <div id="section_office365" class="<?= ($mail_config['method'] ?? '') === 'office365' ? '' : 'is-hidden' ?>">
                 <div class="alert alert-info">
                     <i class="fa fa-info-circle"></i> <?= __('o365_notice', "L'envoi direct via Microsoft 365 utilisera l'adresse expéditeur ci-dessus avec les connecteurs configurés de votre environnement.") ?>
                 </div>
             </div>
 
-            <hr style="margin: 25px 0 15px 0; border: 0; border-top: 1px solid #dee2e6;">
+            <hr class="mail-divider">
 
-            <div class="test-email-box">
+            <div>
                 <label for="mail_test_recipient"><strong><i class="fa fa-paper-plane"></i> <?= __('test_mail_title', "Tester la configuration d'envoi") ?> :</strong></label>
-                <div class="form-row" style="margin-top: 5px;">
-                    <div class="form-group col-md-8" style="margin-bottom: 0;">
+                <div class="form-row mail-test-box">
+                    <div class="form-group col-md-8 mail-test-group">
                         <input type="email" id="mail_test_recipient" class="form-control" placeholder="<?= __('test_mail_placeholder', 'Entrez une adresse e-mail pour le test (ex: votre-email@domaine.fr)') ?>">
                     </div>
-                    <div class="form-group col-md-4" style="margin-bottom: 0;">
+                    <div class="form-group col-md-4 mail-test-group">
                         <button type="button" class="btn btn-secondary btn-block" id="btnTestMail">
                             <i class="fa fa-paper-plane"></i> <?= __('test_send_btn', "Envoyer un e-mail de test") ?>
                         </button>
@@ -802,94 +802,6 @@ function addWinrmRow(){
     tr.innerHTML=`<td><input type="text" class="table-input win-name" placeholder="ex: Admin Local"></td><td><input type="text" class="table-input win-domain" placeholder="ex: user ou laisser vide"></td><td><input type="text" class="table-input win-user" placeholder="ex: admin"></td><td><input type="password" class="table-input win-pwd" placeholder="${t('placeholder_type_password', 'Saisir mot de passe')}"></td><td style="text-align:center;"><button type="button" class="btn-trash" title="${t('action_delete', 'Supprimer')}" onclick="removeAccountRow(this)">🗑️</button></td>`;
     tbody.appendChild(tr);
 }
-
-function toggleMailMethodFields() {
-    const method = document.getElementById('mail_method')?.value;
-    const smtpSec = document.getElementById('section_smtp');
-    const o365Sec = document.getElementById('section_office365');
-
-    if (smtpSec) smtpSec.style.display = (method === 'smtp') ? '' : 'none';
-    if (o365Sec) o365Sec.style.display = (method === 'office365') ? '' : 'none';
-}
-
-document.getElementById('mail_method')?.addEventListener('change', toggleMailMethodFields);
-
-document.getElementById('btnSaveMailConfig')?.addEventListener('click', function() {
-    const payload = new URLSearchParams({
-        action: 'save_mail_config',
-        from_name: document.getElementById('mail_from_name')?.value.trim() || '',
-        from_email: document.getElementById('mail_from_email')?.value.trim() || '',
-        method: document.getElementById('mail_method')?.value || 'mail',
-        smtp_host: document.getElementById('mail_smtp_host')?.value.trim() || '',
-        smtp_port: document.getElementById('mail_smtp_port')?.value.trim() || '25',
-        smtp_secure: document.getElementById('mail_smtp_secure')?.value || 'tls',
-        smtp_user: document.getElementById('mail_smtp_user')?.value.trim() || '',
-        smtp_pass: document.getElementById('mail_smtp_pass')?.value || ''
-    });
-
-    fetch('param.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-        body: payload.toString()
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert(t('mail_saved_success', 'Configuration e-mail enregistrée avec succès.'));
-            location.reload();
-        } else {
-            alert(t('msg_error', 'Erreur : ') + (data.error || t('msg_unknown_error', 'Erreur inconnue')));
-        }
-    })
-    .catch(err => alert(t('msg_network_error', 'Erreur réseau') + ' : ' + err.message));
-});
-
-function testMailConfig() {
-    const recipient = document.getElementById('mail_test_recipient')?.value.trim();
-    if (!recipient) {
-        alert(t('mail_test_recipient_required', 'Veuillez saisir une adresse e-mail destinataire.'));
-        return;
-    }
-
-    const btn = document.getElementById('btnTestMail');
-    const origHtml = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ' + t('mail_testing', 'Envoi en cours...');
-    }
-
-    const payload = new URLSearchParams({
-        action: 'test_mail',
-        to: recipient
-    });
-
-    fetch('param.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-        body: payload.toString()
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = origHtml;
-        }
-        if (data.success) {
-            alert(t('mail_test_success', 'E-mail de test envoyé avec succès !'));
-        } else {
-            alert(t('msg_error', 'Erreur : ') + (data.error || t('msg_unknown_error', 'Erreur inconnue')));
-        }
-    })
-    .catch(err => {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = origHtml;
-        }
-        alert(t('msg_network_error', 'Erreur réseau') + ' : ' + err.message);
-    });
-}
-
-document.getElementById('btnTestMail')?.addEventListener('click', testMailConfig);
 
 document.getElementById('btnSaveAccounts')?.addEventListener('click',function(){
     const localUser=document.getElementById('inputLocalSupervisorUser').value.trim(),

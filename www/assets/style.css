@@ -369,3 +369,8 @@ body.dark-mode .modal-box { background: #2b2b2b; color: #fff; border: 1px solid 
 .server-os { font-size: 0.95em; opacity: 0.8; margin-top: 4px; font-weight: 500;}
 .server-title-row { display: flex; align-items: center; gap: 12px;}
 .server-title-row h1 { margin: 0;}
+.is-hidden { display: none !important;}
+.mail-header-title { margin: 0;}
+.mail-divider { margin: 25px 0 15px 0; border: 0; border-top: 1px solid var(--border-color, #dee2e6);}
+.mail-test-box { margin-top: 5px;}
+.mail-test-group { margin-bottom: 0;}
