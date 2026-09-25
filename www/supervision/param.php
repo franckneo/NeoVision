@@ -635,6 +635,7 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
 </div>
 <button id="backToTop" title="<?= __('btn_scroll_bottom', 'Descendre en bas') ?>"><span>↓</span></button>
 <script src="/assets/darkmode.js"></script>
+<script src="/assets/js/param.js"></script>
 <script>
 document.querySelectorAll(".param-nav-btn").forEach(btn => {
     btn.onclick = () => {
@@ -730,7 +731,6 @@ function savePcs() {
         const site = row.querySelector('.pc-input-site').value.trim();
         const detail = row.querySelector('.pc-input-details').value.trim();
         const mac = row.querySelector('.pc-input-mac').value.trim();
-
         if (computer !== '') {
             pcs.push({ computer, user, site, detail, mac });
         }
