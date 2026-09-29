@@ -2,9 +2,7 @@ apt update && apt install -y git curl
 
 git clone https://github.com/franckneo/NeoVision.git /tmp/NeoVision
 
-cd /tmp/NeoVision
-
-./install.sh
+./tmp/NeoVision/install.sh
 
 
 Ouvrir sur navigateur :
