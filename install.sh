@@ -276,7 +276,11 @@ $config = [
         'user_group' => getenv('LDAP_USER_GROUP'),
     ],
 ];
-echo json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;
+
+echo json_encode(
+    $config,
+    JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+), PHP_EOL;
 PHP
 
 unset AUTH_MODE LOCAL_USERNAME LOCAL_HASH
