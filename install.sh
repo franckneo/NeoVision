@@ -203,27 +203,85 @@ if [ ! -f "${OPT_DIR}/data/wol.json" ]; then
 EOF
 fi
 
-# auth.json (gestion de l'authentification Locale et LDAP/AD)
-if [ ! -f "${OPT_DIR}/data/auth.json" ]; then
-    log_info "Création de auth.json (admin / admin par défaut)..."
-    cat << 'EOF' > "${OPT_DIR}/data/auth.json"
-{
-    "auth_mode": "local",
-    "local_admin": {
-        "enabled": true,
-        "username": "admin",
-        "password_hash": "$2y$10$4.oP2rD85i2kKqDk5E4bEOC99u86pGkIu0d0FzZfZJ0yT2YxV2J9u"
-    },
-    "ldap": {
-        "server": "",
-        "port": 389,
-        "domain": "",
-        "base_dn": "",
-        "user_group": ""
-    }
-}
-EOF
+# Authentification locale ou LDAP/AD
+AUTH_CONFIG="${WWW_DIR}/common/auth_config.json"
+mkdir -p "${WWW_DIR}/common"
+
+echo
+echo "Mode d'authentification :"
+echo "  1) Compte local"
+echo "  2) Annuaire LDAP / Active Directory"
+while true; do
+    read -r -p "Choix [1-2] : " AUTH_CHOICE
+    case "${AUTH_CHOICE}" in
+        1|2) break ;;
+        *) echo "Choix invalide. Saisir 1 ou 2." ;;
+    esac
+done
+
+read -r -p "Nom du compte administrateur local [admin] : " LOCAL_USERNAME
+LOCAL_USERNAME="${LOCAL_USERNAME:-admin}"
+while true; do
+    read -r -s -p "Mot de passe du compte local : " LOCAL_PASSWORD
+    echo
+    if [ -n "${LOCAL_PASSWORD}" ]; then
+        break
+    fi
+    echo "Le mot de passe ne peut pas être vide."
+done
+
+LOCAL_HASH="$(php -r 'echo password_hash($argv[1], PASSWORD_DEFAULT);' "${LOCAL_PASSWORD}")"
+unset LOCAL_PASSWORD
+
+if [ "${AUTH_CHOICE}" = "2" ]; then
+    read -r -p "Serveur LDAP/AD (nom DNS ou IP) : " LDAP_SERVER
+    read -r -p "Port LDAP [389] : " LDAP_PORT
+    LDAP_PORT="${LDAP_PORT:-389}"
+    read -r -p "Domaine AD (ex. exemple.local) : " LDAP_DOMAIN
+    read -r -p "Base DN (ex. DC=exemple,DC=local) : " LDAP_BASE_DN
+    read -r -p "Groupe AD autorisé (DN complet, vide = aucun filtre) : " LDAP_USER_GROUP
+
+    AUTH_MODE="ldap"
+else
+    AUTH_MODE="local"
+    LDAP_SERVER=""
+    LDAP_PORT="389"
+    LDAP_DOMAIN=""
+    LDAP_BASE_DN=""
+    LDAP_USER_GROUP=""
 fi
+
+if ! [[ "${LDAP_PORT}" =~ ^[0-9]+$ ]] || [ "${LDAP_PORT}" -lt 1 ] || [ "${LDAP_PORT}" -gt 65535 ]; then
+    log_error "Port LDAP invalide."
+    exit 1
+fi
+
+export AUTH_MODE LOCAL_USERNAME LOCAL_HASH
+export LDAP_SERVER LDAP_PORT LDAP_DOMAIN LDAP_BASE_DN LDAP_USER_GROUP
+
+php <<'PHP' > "${AUTH_CONFIG}"
+<?php
+$config = [
+    'auth_mode' => getenv('AUTH_MODE'),
+    'local_admin' => [
+        'enabled' => true,
+        'username' => getenv('LOCAL_USERNAME'),
+        'password_hash' => getenv('LOCAL_HASH'),
+    ],
+    'ldap' => [
+        'server' => getenv('LDAP_SERVER'),
+        'port' => (int) getenv('LDAP_PORT'),
+        'domain' => getenv('LDAP_DOMAIN'),
+        'base_dn' => getenv('LDAP_BASE_DN'),
+        'user_group' => getenv('LDAP_USER_GROUP'),
+    ],
+];
+echo json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;
+PHP
+
+unset AUTH_MODE LOCAL_USERNAME LOCAL_HASH
+unset LDAP_SERVER LDAP_PORT LDAP_DOMAIN LDAP_BASE_DN LDAP_USER_GROUP
+chmod 640 "${AUTH_CONFIG}"
 
 # 7. DÉPLOIEMENT DU CODE WEB (/var/www/)
 log_step "7" "Déploiement de l'interface Web dans ${WWW_DIR}"
@@ -332,6 +390,9 @@ find "${LOG_DIR}" -type f -exec chmod 660 {} + 2>/dev/null || true
 chown -R www-data:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 chmod -R 750 "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 log_info "Permissions appliquées."
+
+chown root:www-data "${WWW_DIR}/common/auth_config.json"
+chmod 640 "${WWW_DIR}/common/auth_config.json"
 
 # 10. CONFIGURATION SUDOERS (ACCÈS CIBLÉS POUR WWW-DATA)
 log_step "10" "Configuration du fichier Sudoers (${SUDOERS_FILE})"
