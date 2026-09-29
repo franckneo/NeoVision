@@ -255,12 +255,9 @@ done
 echo -e "\n${BLUE}[*] Configuration des autorisations sudoers...${NC}"
 cat << 'EOF' > "$SUDOERS_FILE"
 # NeoVision permissions pour www-data
-Defaults:www-data !requiretty
 
-# Execution des scripts Python via le venv sans mot de passe
-www-data ALL=(ALL) NOPASSWD: /opt/supervision/venv/bin/python3 /opt/supervision/*.py
-www-data ALL=(ALL) NOPASSWD: /opt/supervision/venv/bin/python3 /opt/supervision/history/history.py
-www-data ALL=(ALL) NOPASSWD: /opt/supervision/venv/bin/python3 /opt/supervision/clean_history.py
+# Execution de python3 dans le venv (sans mot de passe)
+www-data ALL=(ALL) NOPASSWD: /opt/supervision/venv/bin/python3
 
 # Outils reseau
 www-data ALL=(ALL) NOPASSWD: /usr/bin/wakeonlan
