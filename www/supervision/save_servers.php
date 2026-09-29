@@ -10,52 +10,78 @@ if (!isset($input['servers']) || !is_array($input['servers'])) {
     echo json_encode(['success' => false, 'error' => __('msg_invalid_data', 'Données invalides')]);
     exit();
 }
-$jsonPath = '/opt/supervision/data/servers.json';
-$existingServers = file_exists($jsonPath) ? (json_decode(file_get_contents($jsonPath), true) ?? []) : [];
-$pwMap = [];
-foreach ($existingServers as $s) {
-    if (!empty($s['name']) && !empty($s['enc_password'])) {
-        $pwMap[$s['name']] = $s['enc_password'];
-    }
-}
+$serversFile = '/opt/supervision/data/servers.json';
+$alertConfigFile = '/opt/supervision/data/alert_config.json';
 $dataDir = '/opt/supervision/data/';
-$updatedServers = [];
+$oldServersData = file_exists($serversFile) ? json_decode(file_get_contents($serversFile), true) : [];
+$oldServers = $oldServersData['servers'] ?? [];
+$newServers = [];
+$renames = []; // old_name => new_name
 foreach ($input['servers'] as $srv) {
     $name = trim($srv['name'] ?? '');
-    $originalName = trim($srv['original_name'] ?? $name);
     if (empty($name)) continue;
-    if (!empty($originalName) && $originalName !== $name) {
-        $files = glob($dataDir . $originalName . '_*') ?: [];
-        $directFiles = glob($dataDir . $originalName . '.*') ?: [];
-        $allFiles = array_unique(array_merge($files, $directFiles));
-        foreach ($allFiles as $oldFilePath) {
-            $baseName = basename($oldFilePath);
-            if (strpos($baseName, $originalName . '_') === 0) {
-                $newBaseName = $name . '_' . substr($baseName, strlen($originalName) + 1);
-            } elseif (strpos($baseName, $originalName . '.') === 0) {
-                $newBaseName = $name . '.' . substr($baseName, strlen($originalName) + 1);
-            } else {
-                continue;
-            }
-            $newFilePath = $dataDir . $newBaseName;
-            if (file_exists($oldFilePath)) {
-                @rename($oldFilePath, $newFilePath);
+    $oldName = trim($srv['old_name'] ?? '');
+    if (!empty($oldName) && $oldName !== $name) {
+        $renames[$oldName] = $name;
+    }
+    $entry = [
+        'name' => $name,
+        'ip' => trim($srv['ip'] ?? ''),
+        'os' => trim($srv['os'] ?? 'linux'),
+        'environment' => trim($srv['environment'] ?? 'prod')
+    ];
+
+    if (!empty($srv['user'])) {
+        $entry['user'] = trim($srv['user']);
+    }
+    if (!empty($srv['auth_type'])) {
+        $entry['auth_type'] = trim($srv['auth_type']);
+    }
+    if (isset($srv['password']) && $srv['password'] !== '') {
+        $entry['password'] = $srv['password'];
+    }
+
+    $newServers[] = $entry;
+}
+$oldNames = array_column($oldServers, 'name');
+$newNames = array_column($newServers, 'name');
+$deletedNames = array_diff($oldNames, $newNames, array_keys($renames));
+$alertConfig = file_exists($alertConfigFile) ? json_decode(file_get_contents($alertConfigFile), true) : [];
+if (!is_array($alertConfig)) {
+    $alertConfig = [];
+}
+foreach ($deletedNames as $delName) {
+    unset($alertConfig[$delName]);
+    $files = glob($dataDir . $delName . '_*.json');
+    if ($files) {
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+    }
+}
+foreach ($renames as $old => $new) {
+    if (isset($alertConfig[$old])) {
+        $alertConfig[$new] = $alertConfig[$old];
+        unset($alertConfig[$old]);
+    }
+    $files = glob($dataDir . $old . '_*.json');
+    if ($files) {
+        $prefixOld = $dataDir . $old . '_';
+        $prefixNew = $dataDir . $new . '_';
+        foreach ($files as $file) {
+            if (strpos($file, $prefixOld) === 0) {
+                $suffix = substr($file, strlen($prefixOld));
+                $target = $prefixNew . $suffix;
+                @rename($file, $target);
             }
         }
     }
-    $item = [
-        'name' => $name,
-        'ip' => trim($srv['ip'] ?? ''),
-        'type' => trim($srv['type'] ?? 'windows'),
-        'user' => trim($srv['user'] ?? '')
-    ];
-    if (!empty($originalName) && isset($pwMap[$originalName])) {
-        $item['enc_password'] = $pwMap[$originalName];
-    } elseif (isset($pwMap[$name])) {
-        $item['enc_password'] = $pwMap[$name];
-    }
-
-    $updatedServers[] = $item;
 }
-file_put_contents($jsonPath, json_encode($updatedServers, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-echo json_encode(['success' => true]);
+$resultServers = file_put_contents($serversFile, json_encode(['servers' => $newServers], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+file_put_contents($alertConfigFile, json_encode($alertConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+exec('python3 /opt/supervision/build_dashboard.py > /dev/null 2>&1 &');
+if ($resultServers !== false) {
+    echo json_encode(['success' => true]);
+} else {
+    echo json_encode(['success' => false, 'error' => __('msg_write_error', 'Erreur d\'écriture')]);
+}
