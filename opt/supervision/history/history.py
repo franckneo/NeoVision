@@ -143,7 +143,8 @@ def process_events(events, active):
     return active
 def read_servers():
     data = load_json(SERVERS_FILE, [])
-    return data if isinstance(data, list) else []
+    if isinstance(data, dict):
+        return data.get("servers", [])
 def read_server_config():
     data = load_json(CONFIG_FILE, {})
     return data if isinstance(data, dict) else {}

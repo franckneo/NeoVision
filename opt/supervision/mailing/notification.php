@@ -12,7 +12,8 @@ $networkFiles = [
 ];
 $config = json_decode(@file_get_contents($configFile), true) ?: [];
 $netConfig = json_decode(@file_get_contents($netConfigFile), true) ?: [];
-$servers = json_decode(@file_get_contents($serversFile), true) ?: [];
+$rawServers = json_decode(@file_get_contents($serversFile), true) ?: [];
+$servers = isset($rawServers['servers']) && is_array($rawServers['servers']) ? $rawServers['servers'] : (is_array($rawServers) ? $rawServers : []);
 $lastState = json_decode(@file_get_contents($stateFile), true) ?: [];
 $userChannels = json_decode(@file_get_contents($channelsFile), true) ?: [];
 $newState = [

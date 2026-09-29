@@ -2,6 +2,7 @@
 require_once '/var/www/common/init.php';
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) { header("Location:index.php"); exit(); }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'refresh') {
+    session_write_close();    
     header('Content-Type: application/json');
     $server = isset($_POST['server']) ? preg_replace('/[^a-zA-Z0-9_\-]/', '', $_POST['server']) : '';
     if (!empty($server)) {
@@ -90,7 +91,9 @@ async function fetchServers(){
         if (r.ok) { const data = await r.json(); return data.servers || []; }
     } catch (e) {}
     const rFallback = await fetch('/api/data/servers.json?v=' + Date.now());
-    return rFallback.ok ? rFallback.json() : [];
+    if (!rFallback.ok) return [];
+    const fbData = await rFallback.json();
+    return Array.isArray(fbData) ? fbData : (fbData.servers || []);
 }
 function computeServerLevel(s) {
     if (s && s.health && typeof s.health === "object" && s.health.level) {

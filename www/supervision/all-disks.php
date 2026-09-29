@@ -39,8 +39,9 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const serversResponse = await fetch('/api/data/servers.json');
             if (!serversResponse.ok) throw new Error('Impossible de charger servers.json');
-            const servers = await serversResponse.json();
-            const antiCache = `?v=${Date.now()}`;
+	    const raw = await serversResponse.json();
+            const servers = Array.isArray(raw) ? raw : (raw.servers || []);
+	    const antiCache = `?v=${Date.now()}`;
             const promises = servers.map(server => fetch(`/api/data/${server.name}_disks.json${antiCache}`).then(r => r.ok ? r.json() : []));
             const allDisksData = await Promise.all(promises);
             return { servers, allDisksData };
@@ -51,7 +52,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const datasets = [];
         const colors = ['#e74c3c','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#f39c12','#95a5a6'];
         let colorIndex = 0;
-        servers.forEach((server, idx) => {
+	const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - 90);
+	servers.forEach((server, idx) => {
             const diskHistory = allDisksData[idx] || [];
             const validEntries = diskHistory.filter(e => e.disks && typeof e.disks === "object" && !e.disks.error);
             const diskNames = new Set();
@@ -61,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const points = validEntries.filter(e => e.disks[disk]).map(e => {
                     totalSize = e.disks[disk].total;
                     return { x: new Date(e.timestamp), y: parseFloat(e.disks[disk].used_percent), total: e.disks[disk].total };
-                }).sort((a,b) => a.x - b.x);
+                }).filter(pt => pt.x >= cutoffDate).sort((a,b) => a.x - b.x);
                 if (points.length) {
                     datasets.push({ label: `${server.name} - ${disk}`, data: points, borderColor: colors[colorIndex++ % colors.length], borderWidth: 2, pointRadius: 0, tension: 0.15, fill: false, total_size: totalSize });
                 }

@@ -22,8 +22,10 @@ def load_disks(name):
     disks=item.get("disks",{}) if isinstance(item,dict) else {}
     return {"timestamp":item.get("timestamp",""),"disks":disks if isinstance(disks,dict) else {}}
 def load_servers():
-    value=load(os.path.join(DATA,"servers.json"),[])
-    return value if isinstance(value,list) else []
+    value = load(os.path.join(DATA, "servers.json"), [])
+    if isinstance(value, dict) and "servers" in value:
+        return value["servers"]
+    return value if isinstance(value, list) else []
 def number(value):
     try:
         return float(str(value).replace("%","").strip())

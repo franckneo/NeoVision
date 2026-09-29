@@ -194,7 +194,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 $activeTab = isset($_GET['lang']) ? 'langue' : ($_COOKIE['activeParamView'] ?? 'comptes');
 $serversJsonPath = '/opt/supervision/data/servers.json';
-$servers = file_exists($serversJsonPath) ? (json_decode(file_get_contents($serversJsonPath), true) ?? []) : [];
+$serversRaw = file_exists($serversJsonPath) ? (json_decode(file_get_contents($serversJsonPath), true) ?? []) : [];
+$servers = isset($serversRaw['servers']) && is_array($serversRaw['servers']) ? $serversRaw['servers'] : $serversRaw;
 $mailConfigJsonPath = '/opt/supervision/data/mail_config.json';
 $mailConfig = file_exists($mailConfigJsonPath) ? (json_decode(file_get_contents($mailConfigJsonPath), true) ?? []) : [];
 $accountsJsonPath = '/opt/supervision/data/accounts.json';
@@ -331,7 +332,7 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
             <table class="table-servers-config" id="tableServers">
                 <thead><tr><th style="width:20%;"><?= __('col_server_name', 'Nom du serveur') ?></th><th style="width:16%;"><?= __('col_ip_address', 'Adresse IP') ?></th><th style="width:12%;"><?= __('col_type', 'Type') ?></th><th style="width:20%;"><?= __('col_user', 'Utilisateur') ?></th><th style="width:12%;"><?= __('col_access', 'Accès') ?></th><th style="width:8%; text-align:center;"><?= __('col_test', 'Test') ?></th><th style="width:6%; text-align:center;"><?= __('col_order', 'Ordre') ?></th><th style="width:6%; text-align:center;"><?= __('col_delete', 'Suppr') ?></th></tr></thead>
                 <tbody>
-                    <?php foreach ($servers as $s): $isLinux = strtolower($s['type'] ?? '') === 'linux'; ?>
+		    <?php foreach ($servers as $s): $isLinux = strtolower($s['type'] ?? $s['os'] ?? '') === 'linux'; ?>
                     <tr class="server-row" data-original-name="<?= htmlspecialchars($s['name'] ?? '') ?>" data-enc-password="<?= htmlspecialchars($s['enc_password'] ?? '') ?>">
                         <td><input type="text" class="input-srv-name" value="<?= htmlspecialchars($s['name'] ?? '') ?>" placeholder="ex: BSSRV01"></td>
                         <td><input type="text" class="input-srv-ip" value="<?= htmlspecialchars($s['ip'] ?? '') ?>" placeholder="ex: 10.101.0.31"></td>

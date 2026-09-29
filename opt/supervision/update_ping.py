@@ -28,7 +28,12 @@ def load_json(path, default):
         return default
 
 def load_servers():
-    return load_json(SERVERS_FILE, [])
+    data = load_json(SERVERS_FILE, [])
+    if isinstance(data, dict):
+        return data.get("servers", [])
+    elif isinstance(data, list):
+        return data
+    return []
 
 def load_config():
     return load_json(CONFIG_FILE, {})
