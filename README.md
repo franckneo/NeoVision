@@ -4,8 +4,6 @@ git clone https://github.com/franckneo/NeoVision.git /tmp/NeoVision
 
 cd /tmp/NeoVision
 
-chmod +x install.sh
-
 ./install.sh
 
 
