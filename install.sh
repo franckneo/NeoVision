@@ -71,6 +71,8 @@ apt-get update -qq
 log_info "Installation d'Apache, PHP, OpenSSH et des outils système..."
 apt-get install -y -qq \
     apache2 \
+    cron \
+    php-ldap \
     libapache2-mod-php \
     php \
     php-cli \
@@ -201,13 +203,23 @@ if [ ! -f "${OPT_DIR}/data/wol.json" ]; then
 EOF
 fi
 
-# auth.json (gestion des identifiants d'accès)
+# auth.json (gestion de l'authentification Locale et LDAP/AD)
 if [ ! -f "${OPT_DIR}/data/auth.json" ]; then
     log_info "Création de auth.json (admin / admin par défaut)..."
     cat << 'EOF' > "${OPT_DIR}/data/auth.json"
 {
-    "users": {
-        "admin": "$2y$10$4.oP2rD85i2kKqDk5E4bEOC99u86pGkIu0d0FzZfZJ0yT2YxV2J9u"
+    "auth_mode": "local",
+    "local_admin": {
+        "enabled": true,
+        "username": "admin",
+        "password_hash": "$2y$10$4.oP2rD85i2kKqDk5E4bEOC99u86pGkIu0d0FzZfZJ0yT2YxV2J9u"
+    },
+    "ldap": {
+        "server": "",
+        "port": 389,
+        "domain": "",
+        "base_dn": "",
+        "user_group": ""
     }
 }
 EOF
