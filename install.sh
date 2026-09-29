@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # NeoVision - Script d'installation automatique et sécurisé
-# Compatible : Ubuntu 22.04 LTS / 24.04 LTS (x86_64 / aarch64)
+# Compatible : Ubuntu 22.04 LTS / 24.04 LTS /26.04 LTS (x86_64 / aarch64)
 # Conçu pour exécution directe sous compte root
 # ==============================================================================
 
@@ -387,9 +387,6 @@ echo -e "\n${GREEN}=============================================================
 echo -e "${GREEN}               NEOVISION EST PRÊT À L'EMPLOI !                       ${NC}"
 echo -e "${GREEN}======================================================================${NC}"
 echo -e " Interface Web   : ${CYAN}https://${IP_SRV}/${NC}"
-echo -e " Répertoire Web  : ${BLUE}${WWW_DIR}/supervision${NC}"
-echo -e " Données & Conf  : ${BLUE}${OPT_DIR}/data${NC}"
-echo -e " Logs système    : ${BLUE}${LOG_DIR}${NC}"
 echo -e " Identifiants    : ${YELLOW}admin${NC} / ${YELLOW}admin${NC} (à modifier dès la première connexion)"
 echo -e " Clé SSH publique pour agents distants :"
 if [ -f /root/.ssh/id_ed25519.pub ]; then
