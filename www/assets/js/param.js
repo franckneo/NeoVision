@@ -240,11 +240,24 @@ function removeAccountRow(btn) {
 }
 
 function addSshRow() {
-    const tbody = document.querySelector('#tableSshAccounts tbody'), tr = document.createElement('tr');
-    tr.dataset.sshId = 'ssh_' + Date.now();
-    tr.innerHTML = `<td><input type="text" class="table-input ssh-name" placeholder="ex: Compte User"></td><td><input type="text" class="table-input ssh-user" placeholder="ex: root"></td><td style="text-align:center;"><button type="button" class="btn-trash" title="${t('action_delete', 'Supprimer')}" onclick="removeAccountRow(this)">🗑️</button></td>`;
+    const tbody = document.querySelector('#tableSshAccounts tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input type="text" class="table-input ssh-name"></td>
+        <td><input type="text" class="table-input ssh-user"></td>
+        <td><input type="password" class="table-input ssh-pwd" placeholder="Mot de passe (laisser vide si inchangé)"></td>
+        <td><button type="button" onclick="removeAccountRow(this)">🗑️</button></td>`;
     tbody.appendChild(tr);
 }
+
+const sshAccounts = [];
+document.querySelectorAll('#tableSshAccounts tbody tr').forEach(row => {
+    const id = row.dataset.sshId || '';
+    const name = row.querySelector('.ssh-name').value.trim();
+    const user = row.querySelector('.ssh-user').value.trim();
+    const new_password = row.querySelector('.ssh-pwd')?.value || '';
+    const enc_password = row.dataset.encPassword || '';
+    if (user) sshAccounts.push({ id, name, user, new_password, enc_password });
+});
 
 function addWinrmRow() {
     const tbody = document.querySelector('#tableWinrmAccounts tbody'), tr = document.createElement('tr');
