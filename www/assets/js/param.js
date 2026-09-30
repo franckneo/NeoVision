@@ -525,17 +525,30 @@ const btnCloseSsh = document.getElementById('btnCloseSsh');
 const btnHeaderCloseSsh = document.getElementById('btnHeaderCloseSsh');
 if (btnCloseSsh) btnCloseSsh.onclick = closeSshModal;
 if (btnHeaderCloseSsh) btnHeaderCloseSsh.onclick = closeSshModal;
-
 if (btnRunSsh) {
     btnRunSsh.onclick = async () => {
         const ip = sshIpInput.value.trim(),
               local_user = sshLocalUserInput.value.trim(),
               user = sshUserInput.value.trim(),
-              password = sshPassInput.value;
-        if (!password) {
+              password = sshPassInput.value,
+              savedProfileSelected = sshProfileSelect && sshProfileSelect.value !== '';
+        if (!savedProfileSelected && !password) {
             alert(t('alert_fill_ssh_password', 'Veuillez saisir le mot de passe distant.'));
             return;
         }
+        btnRunSsh.disabled = true;
+        sshConsole.textContent = "[1/3] " + t('log_ssh_step1', "Vérification/génération de la clé locale ({user})...").replace('{user}', local_user) + "\n";
+        try {
+            const payload = { ip, local_user, user };
+
+            if (password) {
+                payload.password = password;
+            }
+            const res = await fetch('deploy_ssh_key.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
         btnRunSsh.disabled = true;
         sshConsole.textContent = "[1/3] " + t('log_ssh_step1', "Vérification/génération de la clé locale ({user})...").replace('{user}', local_user) + "\n";
         try {
