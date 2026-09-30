@@ -539,19 +539,6 @@ if (btnRunSsh) {
         btnRunSsh.disabled = true;
         sshConsole.textContent = "[1/3] " + t('log_ssh_step1', "Vérification/génération de la clé locale ({user})...").replace('{user}', local_user) + "\n";
         try {
-            const payload = { ip, local_user, user };
-
-            if (password) {
-                payload.password = password;
-            }
-            const res = await fetch('deploy_ssh_key.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        btnRunSsh.disabled = true;
-        sshConsole.textContent = "[1/3] " + t('log_ssh_step1', "Vérification/génération de la clé locale ({user})...").replace('{user}', local_user) + "\n";
-        try {
             const res = await fetch('deploy_ssh_key.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
