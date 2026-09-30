@@ -286,14 +286,15 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
                     <input type="text" id="inputLocalSupervisorUser" class="table-input" style="width:200px;" value="<?= htmlspecialchars($localSupervisorUser) ?>" placeholder="ex: user ou root">
                 </div>
             </div>
-            <h3>🐧 <?= __('ssh_accounts_title', 'Comptes SSH (Ubuntu / Linux)') ?></h3>
+	    <h3>🐧 <?= __('ssh_accounts_title', 'Comptes SSH (Ubuntu / Linux)') ?></h3>
             <table class="table-servers-config" id="tableSshAccounts">
-                <thead><tr><th style="width:45%;"><?= __('col_friendly_name', 'Nom convivial') ?></th><th style="width:45%;"><?= __('col_remote_user', 'Utilisateur distant') ?></th><th style="width:10%; text-align:center;"><?= __('col_action', 'Action') ?></th></tr></thead>
-                <tbody>
+                <thead><tr><th style="width:30%;"><?= __('col_friendly_name', 'Nom convivial') ?></th><th style="width:30%;"><?= __('col_remote_user', 'Utilisateur distant') ?></th><th style="width:30%;"><?= __('col_password', 'Mot de passe') ?></th><th style="width:10%; text-align:center;"><?= __('col_action', 'Action') ?></th></tr></thead>
+		<tbody>
                     <?php foreach ($sshAccounts as $ssh): ?>
                     <tr data-ssh-id="<?= htmlspecialchars($ssh['id'] ?? '') ?>">
                         <td><input type="text" class="table-input ssh-name" value="<?= htmlspecialchars($ssh['name'] ?? '') ?>" placeholder="ex: Compte User"></td>
                         <td><input type="text" class="table-input ssh-user" value="<?= htmlspecialchars($ssh['user'] ?? '') ?>" placeholder="ex: root"></td>
+                        <td><input type="password" class="table-input ssh-pwd" placeholder="Mot de passe (laisser vide si inchangé)"></td>
                         <td style="text-align:center;"><button type="button" class="btn-trash" title="<?= __('action_delete', 'Supprimer') ?>" onclick="removeAccountRow(this)">🗑️</button></td>
                     </tr>
                     <?php endforeach; ?>
