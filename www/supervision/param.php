@@ -228,23 +228,27 @@ if (window.location.search.includes('lang=')) {
     window.history.replaceState({}, document.title, window.location.pathname);
 }
 const I18N = <?= json_encode($LANG, JSON_UNESCAPED_UNICODE) ?>;
-document.querySelectorAll(".param-nav-btn").forEach(btn => {
-    btn.onclick = () => {
-        const param = btn.dataset.param;
-        document.querySelectorAll(".param-nav-btn").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".param-view").forEach(v => v.style.display = "none");
-        btn.classList.add("active");
-        const targetView = document.getElementById(`view-${param}`);
-        if (targetView) targetView.style.display = "block";
-        localStorage.setItem("activeParamView", param);
-        document.cookie = `activeParamView=${param};path=/;max-age=2592000;SameSite=Lax`;
-        window.scrollTo({ top: 0 });
-        const mainEl = document.getElementById("main");
-        if (mainEl) mainEl.scrollTop = 0;
-        updateScrollButton();
-        setTimeout(updateScrollButton, 60);
-    };
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll(".param-nav-btn").forEach(btn => {
+        btn.onclick = () => {
+            const param = btn.dataset.param;
+            document.querySelectorAll(".param-nav-btn").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".param-view").forEach(v => v.style.display = "none");
+            btn.classList.add("active");
+            const targetView = document.getElementById(`view-${param}`);
+            if (targetView) targetView.style.display = "block";
+            localStorage.setItem("activeParamView", param);
+            document.cookie = `activeParamView=${param};path=/;max-age=2592000;SameSite=Lax`;
+            window.scrollTo({ top: 0 });
+            const mainEl = document.getElementById("main");
+            if (mainEl) mainEl.scrollTop = 0;
+            updateScrollButton();
+            setTimeout(updateScrollButton, 60);
+        };
+    });
 });
+
 function t(key, fallback) { return I18N[key] || fallback || key; }
 </script>
 </head>
