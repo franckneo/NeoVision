@@ -30,11 +30,22 @@ log_info "Exécution sous root. Source : ${SCRIPT_DIR}"
 log_step 1 "Installation des dépendances"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client openssl sudo mailutils ssmtp logrotate ssl-cert
+apt-get install -y -qq apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography openssl sudo mailutils ssmtp logrotate ssl-cert
 
-log_step 2 "Création des répertoires"
+log_step 2 "Création des répertoires et de la clé de chiffrement"
 mkdir -p "${OPT_DIR}"/{data/history,data/temp,scripts,wol} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets} /root/.ssh
 chmod 700 /root/.ssh
+
+SECRET_KEY_FILE="${OPT_DIR}/secret.key"
+if [ ! -s "${SECRET_KEY_FILE}" ]; then
+    umask 077
+    python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" > "${SECRET_KEY_FILE}"
+    log_info "Clé de chiffrement créée."
+else
+    log_info "Clé de chiffrement existante conservée."
+fi
+chown root:www-data "${SECRET_KEY_FILE}"
+chmod 640 "${SECRET_KEY_FILE}"
 
 log_step 3 "Configuration de la clé SSH"
 if [ ! -f /root/.ssh/id_rsa ] && [ ! -f /root/.ssh/id_ed25519 ]; then
@@ -151,7 +162,11 @@ if [ "${AUTH_CHOICE}" = "2" ]; then
     AUTH_MODE="ldap"
 else
     AUTH_MODE="local"
-    LDAP_SERVER=""; LDAP_PORT="389"; LDAP_DOMAIN=""; LDAP_BASE_DN=""; LDAP_USER_GROUP=""
+    LDAP_SERVER=""
+    LDAP_PORT="389"
+    LDAP_DOMAIN=""
+    LDAP_BASE_DN=""
+    LDAP_USER_GROUP=""
 fi
 
 if ! [[ "${LDAP_PORT}" =~ ^[0-9]+$ ]] || [ "${LDAP_PORT}" -lt 1 ] || [ "${LDAP_PORT}" -gt 65535 ]; then
@@ -243,6 +258,7 @@ find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {
 chown -R root:www-data "${OPT_DIR}" "${LOG_DIR}"
 chmod 750 "${OPT_DIR}" "${OPT_DIR}/scripts"
 chmod -R 770 "${OPT_DIR}/data"
+chmod 640 "${OPT_DIR}/secret.key"
 [ -d "${OPT_DIR}/wol" ] && chmod -R 750 "${OPT_DIR}/wol"
 chmod 770 "${LOG_DIR}"
 find "${LOG_DIR}" -type f -exec chmod 660 {} + 2>/dev/null || true
