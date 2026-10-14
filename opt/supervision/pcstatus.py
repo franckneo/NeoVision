@@ -6,7 +6,7 @@ import shutil
 import unicodedata
 from pathlib import Path
 from datetime import datetime, timedelta
-SOURCE = Path("/mnt/pcupdate")
+SOURCE = Path("/mnt/wupdate")
 USERS_JSON = Path("/opt/supervision/data/pc/users.json")
 LOG_FILE = Path("/var/log/collect_uptime.log")
 MAX_AGE_MINUTES = 30

@@ -2,7 +2,7 @@
 require_once '/var/www/common/init.php';
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) { header("Location:index.php"); exit(); }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'refresh') {
-    session_write_close();    
+    session_write_close();
     header('Content-Type: application/json');
     $server = isset($_POST['server']) ? preg_replace('/[^a-zA-Z0-9_\-]/', '', $_POST['server']) : '';
     if (!empty($server)) {

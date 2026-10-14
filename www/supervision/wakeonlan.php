@@ -68,7 +68,9 @@ function ipInCidr(string $ip, string $cidr): bool
 }
 $accountsFile = '/opt/supervision/data/accounts.json';
 $relaysFile   = '/opt/supervision/data/wol_relays.json';
-$localUser    = '';
+$accountsData = json_decode(@file_get_contents('/opt/supervision/data/accounts.json'), true) ?? [];
+$localUser = trim($accountsData['local_user'] ?? '');
+if ($localUser === '') { echo json_encode(['success' => false, 'output' => 'Erreur : aucun utilisateur local défini dans Paramètres.']); exit(); }
 if (is_readable($accountsFile)) {
     $accounts = json_decode(
         file_get_contents($accountsFile),
@@ -77,9 +79,6 @@ if (is_readable($accountsFile)) {
     if (is_array($accounts) && !empty($accounts['local_user'])) {
         $localUser = trim($accounts['local_user']);
     }
-}
-if (empty($localUser)) {
-    $localUser = 'root';
 }
 $localHome = $localUser === 'root'
     ? '/root'

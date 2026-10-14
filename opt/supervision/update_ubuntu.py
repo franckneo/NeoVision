@@ -7,7 +7,7 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from filelock import FileLock, Timeout
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_default_local_user
+from lib.servers import get_servers
 DATA_DIR = "/opt/supervision/data"
 CONFIG_FILE = f"{DATA_DIR}/alert_config.json"
 LOCK_FILE = f"{DATA_DIR}/update_ubuntu.lock"
@@ -56,6 +56,7 @@ def check_tcp_port(ip, user, port):
             f"timeout 5 bash -c "
             f"\"cat < /dev/null > /dev/tcp/127.0.0.1/{port}\""
         )
+
         result = subprocess.run(
             [
                 "ssh",
@@ -70,6 +71,7 @@ def check_tcp_port(ip, user, port):
         )
 
         return "active" if result.returncode == 0 else "inactive"
+
     except Exception:
         logging.exception(f"[{ip}] Check TCP port {port} failed")
         return "error"
@@ -86,8 +88,10 @@ def process_server(server, alert_config):
             user,
             "kea-dhcp4-server"
         )
+
         if status is not None:
             results["kea_dhcp"] = status
+    # Proxy Squid : ports 22 et 80
     if config.get("squid_enabled", False):
         ssh_status = check_tcp_port(ip, user, 22)
         squid_status = check_tcp_port(ip, user, 80)
@@ -102,6 +106,8 @@ def process_server(server, alert_config):
                 "80": squid_status
             }
         }
+
+    # Webmin : port 10000
     if config.get("webmin_enabled", False):
         webmin_status = check_tcp_port(ip, user, 10000)
         results["webmin"] = {
@@ -115,11 +121,9 @@ def process_server(server, alert_config):
     }
     out_file = f"{DATA_DIR}/{name}_services.json"
     tmp_file = f"{out_file}.tmp"
-
     try:
         with open(tmp_file, "w") as f:
             json.dump(data, f, indent=2)
-
         os.replace(tmp_file, out_file)
     except Exception:
         logging.exception(f"[{name}] Write JSON failed")
@@ -130,6 +134,7 @@ def main():
     try:
         with open(CONFIG_FILE, "r") as f:
             alert_config = json.load(f)
+
     except Exception:
         logging.exception("Impossible de lire alert_config.json")
         alert_config = {}
@@ -147,8 +152,8 @@ def main():
                 future.result()
             except Exception:
                 logging.exception("Worker exception")
-    logging.info("========== END update_ubuntu ==========")
 
+    logging.info("========== END update_ubuntu ==========")
 if __name__ == "__main__":
     try:
         lock = FileLock(LOCK_FILE, timeout=5)

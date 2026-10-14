@@ -1,0 +1,416 @@
+debut;fin;duree;equipement;type;probleme;valeur;seuil;ip;details
+2026-08-22 05:13:08;2026-08-22 05:16:08;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-23 05:13:08;2026-08-23 05:16:08;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-24 05:13:08;2026-08-24 05:16:07;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-24 10:07:12;2026-08-24 10:08:11;00:00:59;SAD_53_02;network;Équipement réseau inaccessible;2;1;10.113.0.127;2 pertes consécutives
+2026-08-24 10:09:14;2026-08-24 10:10:12;00:00:58;ADR PHY WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.3;2 pertes consécutives
+2026-08-24 10:10:12;2026-08-24 10:11:09;00:00:57;LPA 120 SW04;network;Équipement réseau inaccessible;2;1;10.113.0.124;2 pertes consécutives
+2026-08-24 10:10:12;2026-08-24 10:11:09;00:00:57;CERP_BH_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.0.132;2 pertes consécutives
+2026-08-25 05:13:08;2026-08-25 05:16:07;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-26 05:13:07;2026-08-26 05:16:07;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-26 06:25:09;2026-08-26 06:28:08;00:02:59;proxy01-2;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.140;Service : Squid
+2026-08-26 06:49:07;2026-08-26 06:52:08;00:03:01;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-08-26 06:01:08;2026-08-26 12:01:08;06:00:00;BCSRV04;disk;Espace disque (WARNING) au-dessus du seuil;90%;90%;192.168.209.52;Disque C:
+2026-08-27 05:25:08;2026-08-27 05:28:07;00:02:59;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-08-28 05:25:08;2026-08-28 05:28:07;00:02:59;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-08-28 06:37:07;2026-08-28 06:40:08;00:03:01;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.102.0.139;Service : Squid
+2026-08-27 06:01:07;2026-08-28 12:01:08;30:00:01;BCSRV04;disk;Espace disque (WARNING) au-dessus du seuil;90%;90%;192.168.209.52;Disque C:
+2026-08-29 05:13:07;2026-08-29 05:16:08;00:03:01;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-30 05:13:08;2026-08-30 05:16:08;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-31 05:13:07;2026-08-31 05:16:07;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-08-31 10:24:14;2026-08-31 10:26:12;00:01:58;CERP_BH_36_RCP1;network;Équipement réseau inaccessible;2;1;10.113.0.136;2 pertes consécutives
+2026-08-31 10:25:14;2026-08-31 10:26:12;00:00:58;CERP BH 350 SW02;network;Équipement réseau inaccessible;2;1;10.113.0.202;2 pertes consécutives
+2026-08-28 18:01:07;2026-08-31 11:39:08;65:38:01;BCSRV04;disk;Espace disque (WARNING) au-dessus du seuil;90%;90%;192.168.209.52;Disque C:
+2026-08-31 17:24:14;2026-08-31 17:26:08;00:01:54;SAD_53_01;network;Équipement réseau inaccessible;2;1;10.113.0.126;2 pertes consécutives
+2026-08-31 17:24:14;2026-08-31 17:26:08;00:01:54;Passerelle HAR;network;Équipement réseau inaccessible;2;1;10.103.0.1;2 pertes consécutives
+2026-08-31 17:25:15;2026-08-31 17:26:08;00:00:53;LPA 120 SW04;network;Équipement réseau inaccessible;2;1;10.113.0.124;2 pertes consécutives
+2026-09-01 05:13:08;2026-09-01 05:16:07;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-01 06:31:07;2026-09-01 06:34:08;00:03:01;proxy01-2;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.140;Service : Squid
+2026-09-01 06:58:07;2026-09-01 07:01:07;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-01 10:29:13;2026-09-01 10:30:16;00:01:03;ADR Virtuel WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.1;2 pertes consécutives
+2026-09-01 10:30:16;2026-09-01 10:31:11;00:00:55;SAD_53_01;network;Équipement réseau inaccessible;2;1;10.113.0.126;2 pertes consécutives
+2026-09-01 10:30:16;2026-09-01 10:32:08;00:01:52;SAD 120 SW05;network;Équipement réseau inaccessible;2;1;10.113.0.139;2 pertes consécutives
+2026-09-01 17:16:09;2026-09-01 17:17:13;00:01:04;CERP_BH_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.0.132;2 pertes consécutives
+2026-09-01 17:18:12;2026-09-01 17:20:10;00:01:58;SAD_53_02;network;Équipement réseau inaccessible;2;1;10.113.0.127;2 pertes consécutives
+2026-09-02 05:13:07;2026-09-02 05:16:08;00:03:01;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-03 05:13:08;2026-09-03 05:16:07;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-03 15:02:11;2026-09-03 15:03:13;00:01:02;CERP BH 350 SW01;network;Équipement réseau inaccessible;2;1;10.113.0.200;2 pertes consécutives
+2026-09-04 05:13:07;2026-09-04 05:16:07;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-05 05:13:13;2026-09-05 05:16:13;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-05 20:03:24;2026-09-05 20:04:21;00:00:57;CERP_BF_46_RCP;network;Équipement réseau inaccessible;2;1;10.232.0.133;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BF_46_MAG1;network;Équipement réseau inaccessible;2;1;10.232.0.132;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BF_46_EXP1;network;Équipement réseau inaccessible;2;1;10.232.0.130;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BF_44_Etage;network;Équipement réseau inaccessible;2;1;10.232.0.136;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BH_36_RCP1;network;Équipement réseau inaccessible;2;1;10.113.0.136;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BF_44_Hall1;network;Équipement réseau inaccessible;2;1;10.232.0.134;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BF_46_MAG2;network;Équipement réseau inaccessible;2;1;10.232.0.131;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BA_36_RCP1;network;Équipement réseau inaccessible;2;1;10.111.0.136;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BF_46_EXP2;network;Équipement réseau inaccessible;2;1;10.232.0.129;2 pertes consécutives
+2026-09-05 20:04:21;2026-09-05 20:05:14;00:00:53;CERP_BF_44_Hall2;network;Équipement réseau inaccessible;2;1;10.232.0.135;2 pertes consécutives
+2026-09-06 05:13:13;2026-09-06 05:16:12;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-07 05:13:13;2026-09-07 05:16:12;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-05 04:41:12;2026-09-07 10:35:11;53:53:59;CERP_BW_33_1;network;Équipement réseau inaccessible;2;1;10.114.0.134;2 pertes consécutives
+2026-09-05 04:41:12;2026-09-07 10:54:10;54:12:58;CERP_BW_53_MAG1;network;Équipement réseau inaccessible;2;1;10.114.0.131;2 pertes consécutives
+2026-09-05 04:41:12;2026-09-07 10:57:10;54:15:58;CERP_BW_53_MAG2;network;Équipement réseau inaccessible;2;1;10.114.0.132;2 pertes consécutives
+2026-08-21 18:01:07;2026-09-07 12:54:10;402:53:03;BSSRV02;disk;Espace disque (WARNING) au-dessus du seuil;90%;90%;10.101.0.32;Disque E:
+2026-09-07 14:49:10;2026-09-07 14:51:09;00:01:59;BSSRV11;ping;Serveur hors ligne;7;1;10.101.0.34;7 pertes consécutives
+2026-09-07 16:31:10;2026-09-07 16:57:10;00:26:00;BSSRV03B;ping;Serveur hors ligne;3;1;10.101.230.87;3 pertes consécutives
+2026-09-07 17:08:11;2026-09-07 17:10:11;00:02:00;BSSRV01;ping;Serveur hors ligne;2;1;210.101.0.31;2 pertes consécutives
+2026-09-07 17:14:10;2026-09-07 17:18:10;00:04:00;BSSRV03B;ping;Serveur hors ligne;2;1;109.101.0.87;2 pertes consécutives
+2026-09-07 17:24:10;2026-09-07 17:26:10;00:02:00;BSSRV11;ping;Serveur hors ligne;2;1;10.101.90.34;2 pertes consécutives
+2026-09-07 17:28:10;2026-09-07 17:30:10;00:02:00;BSSRV02;ping;Serveur hors ligne;3;1;10.101.90.32;3 pertes consécutives
+2026-09-07 20:48:09;2026-09-07 20:50:11;00:02:02;PBI-DB;ping;Serveur hors ligne;2;1;192.168.215.2;2 pertes consécutives
+2026-09-07 20:54:40;2026-09-07 20:55:31;00:00:51;CERPPBI-RDS;ping;Serveur hors ligne;2;1;192.168.215.4;2 pertes consécutives
+2026-09-07 20:54:40;2026-09-07 20:55:31;00:00:51;PBI-DB;ping;Serveur hors ligne;2;1;192.168.215.2;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BW 120 SW12;network;Équipement réseau inaccessible;2;1;10.114.0.125;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BT 350 SW02;network;Équipement réseau inaccessible;2;1;10.112.0.202;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BW 210 SW01;network;Équipement réseau inaccessible;2;1;10.114.0.123;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BW 210 SW11;network;Équipement réseau inaccessible;2;1;10.114.0.126;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BA 350 SW02;network;Équipement réseau inaccessible;2;1;10.111.0.202;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BW 120 SW02;network;Équipement réseau inaccessible;2;1;10.114.0.124;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BW 350 SW02;network;Équipement réseau inaccessible;2;1;10.114.0.202;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;Mikrotik Cs317 - 1;network;Équipement réseau inaccessible;2;1;10.111.0.140;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;Mikrotik Cs317 - 2 Cou;network;Équipement réseau inaccessible;2;1;10.111.0.141;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BT 120 SW01;network;Équipement réseau inaccessible;2;1;10.112.0.123;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BW 120 SW13;network;Équipement réseau inaccessible;2;1;10.114.0.128;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP BW 120 SW14;network;Équipement réseau inaccessible;2;1;10.114.0.129;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;Mikrotik Cs317 - 1 Cou;network;Équipement réseau inaccessible;2;1;10.111.0.140;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP_BW_53_EXP2;network;Équipement réseau inaccessible;2;1;10.114.0.130;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP_BW_53_EXP1;network;Équipement réseau inaccessible;2;1;10.114.0.135;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;CERP_BW_53_RCP1;network;Équipement réseau inaccessible;2;1;10.114.0.136;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:56:09;00:00:38;ADR PHY WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.3;2 pertes consécutives
+2026-09-07 20:56:09;2026-09-07 20:57:10;00:01:01;BWSRV02;ping;Serveur hors ligne;2;1;10.104.0.32;2 pertes consécutives
+2026-09-07 20:56:09;2026-09-07 20:57:10;00:01:01;proxy02;ping;Serveur hors ligne;2;1;10.102.0.139;2 pertes consécutives
+2026-09-07 20:56:09;2026-09-07 20:57:10;00:01:01;proxy04;ping;Serveur hors ligne;2;1;10.104.0.139;2 pertes consécutives
+2026-09-07 20:56:09;2026-09-07 20:57:10;00:01:01;dhcp2;ping;Serveur hors ligne;2;1;10.102.0.156;2 pertes consécutives
+2026-09-07 20:56:09;2026-09-07 20:57:10;00:01:01;dhcp4;ping;Serveur hors ligne;2;1;10.104.0.156;2 pertes consécutives
+2026-09-07 20:55:31;2026-09-07 20:58:10;00:02:39;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.102.0.139;Service : Squid
+2026-09-07 20:55:31;2026-09-07 20:58:10;00:02:39;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 350 SW01;network;Équipement réseau inaccessible;2;1;10.111.0.200;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BT 350 SW02;network;Équipement réseau inaccessible;2;1;10.112.0.202;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BH 350 SW01;network;Équipement réseau inaccessible;2;1;10.113.0.200;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BH 350 SW02;network;Équipement réseau inaccessible;2;1;10.113.0.202;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BF 350 SW02;network;Équipement réseau inaccessible;2;1;10.232.0.202;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BW 210 SW01;network;Équipement réseau inaccessible;2;1;10.114.0.123;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BW 210 SW11;network;Équipement réseau inaccessible;2;1;10.114.0.126;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BT 350 SW01;network;Équipement réseau inaccessible;2;1;10.112.0.200;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 350 SW02;network;Équipement réseau inaccessible;2;1;10.111.0.202;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BW 350 SW02;network;Équipement réseau inaccessible;2;1;10.114.0.202;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Mikrotik Cs317 - 1;network;Équipement réseau inaccessible;2;1;10.111.0.140;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 210 SW11;network;Équipement réseau inaccessible;2;1;10.111.0.128;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 210 SW02;network;Équipement réseau inaccessible;2;1;10.111.0.125;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BF 48 ex BA BACKUP;network;Équipement réseau inaccessible;2;1;10.232.0.142;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Mikrotik Cs317 - 2 Cou;network;Équipement réseau inaccessible;2;1;10.111.0.141;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 210 SW04;network;Équipement réseau inaccessible;2;1;10.111.0.127;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 210 SW05;network;Équipement réseau inaccessible;2;1;10.111.0.138;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BF 350 SW01;network;Équipement réseau inaccessible;2;1;10.232.0.200;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BW 120 SW13;network;Équipement réseau inaccessible;2;1;10.114.0.128;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Mikrotik Cs317 - 1 Cou;network;Équipement réseau inaccessible;2;1;10.111.0.140;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 210 SW12;network;Équipement réseau inaccessible;2;1;10.111.0.129;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BW 350 SW01;network;Équipement réseau inaccessible;2;1;10.114.0.200;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 210 SW01;network;Équipement réseau inaccessible;2;1;10.111.0.124;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Mikrotik Cs317 - 2;network;Équipement réseau inaccessible;2;1;10.111.0.141;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;CERP BA 210 SW03;network;Équipement réseau inaccessible;2;1;10.111.0.126;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR Virtuel WIN COU;network;Équipement réseau inaccessible;2;1;10.114.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;SAN SWITCH 1;network;Équipement réseau inaccessible;2;1;10.101.0.51;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;bsivi1cou;network;Équipement réseau inaccessible;2;1;10.104.0.14;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR Virtuel WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Sonde temp COU;network;Équipement réseau inaccessible;2;1;10.104.3.2;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;V5300 Node 1;network;Équipement réseau inaccessible;2;1;10.101.0.46;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR PHY WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.3;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;FREQ AND;network;Équipement réseau inaccessible;2;1;10.101.0.105;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR Virtuel WIN FRA;network;Équipement réseau inaccessible;2;1;10.232.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;V5300 Management COU;network;Équipement réseau inaccessible;2;1;10.101.0.45;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;bsswand10;network;Équipement réseau inaccessible;2;1;10.101.0.45;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;FREQ HAR;network;Équipement réseau inaccessible;2;1;10.103.0.105;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Passerelle COU;network;Équipement réseau inaccessible;2;1;10.104.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;bsvi2and;network;Équipement réseau inaccessible;2;1;10.101.0.15;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR PHY1 WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.4;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR PHY1 WIN COU;network;Équipement réseau inaccessible;2;1;10.114.0.2;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR PHY1 WIN AND;network;Équipement réseau inaccessible;2;1;10.111.0.2;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Sonde temp AND;network;Équipement réseau inaccessible;2;1;10.101.3.2;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR PHY WIN COU;network;Équipement réseau inaccessible;2;1;10.114.0.3;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;bsivi1and;network;Équipement réseau inaccessible;2;1;10.101.0.14;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;SAN SWITCH 2 COU;network;Équipement réseau inaccessible;2;1;10.101.0.52;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Passerelle AND;network;Équipement réseau inaccessible;2;1;10.101.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;FREQ COU;network;Équipement réseau inaccessible;2;1;10.104.0.105;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;SAN SWITCH 1 COU;network;Équipement réseau inaccessible;2;1;10.101.0.51;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Passerelle FRA;network;Équipement réseau inaccessible;2;1;10.222.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;bsvi2cou;network;Équipement réseau inaccessible;2;1;10.104.0.15;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR PHY WIN AND;network;Équipement réseau inaccessible;2;1;10.111.0.3;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;Passerelle HAR;network;Équipement réseau inaccessible;2;1;10.103.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;P10 VMI eth0 COU;network;Équipement réseau inaccessible;2;1;10.101.0.54;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;P10 BMC eth0;network;Équipement réseau inaccessible;2;1;10.101.0.53;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;BSANDHMCP10;network;Équipement réseau inaccessible;2;1;10.101.0.24;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;V5300 Node 2;network;Équipement réseau inaccessible;2;1;10.101.0.47;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR Virtuel WIN AND;network;Équipement réseau inaccessible;2;1;10.111.0.1;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;P10 VMI eth0;network;Équipement réseau inaccessible;2;1;10.101.0.54;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;ADR PHY WIN FRA;network;Équipement réseau inaccessible;2;1;10.232.0.3;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;SAN SWITCH 2;network;Équipement réseau inaccessible;2;1;10.101.0.52;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:19:52;00:01:50;P10 BMC eth0 COU;network;Équipement réseau inaccessible;2;1;10.101.0.53;2 pertes consécutives
+2026-09-05 04:41:12;2026-09-07 21:20:38;64:39:26;CERP_BW_33_2;network;Équipement réseau inaccessible;2;1;10.114.0.137;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BW 120 SW12;network;Équipement réseau inaccessible;2;1;10.114.0.125;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BH 120 SW02;network;Équipement réseau inaccessible;2;1;10.113.0.125;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BW 120 SW02;network;Équipement réseau inaccessible;2;1;10.114.0.124;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BH 120 SW03;network;Équipement réseau inaccessible;2;1;10.113.0.130;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;SAD 120 SW05;network;Équipement réseau inaccessible;2;1;10.113.0.139;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BH 120 SW01;network;Équipement réseau inaccessible;2;1;10.113.0.123;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BT 120 SW01;network;Équipement réseau inaccessible;2;1;10.112.0.123;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BW 120 SW14;network;Équipement réseau inaccessible;2;1;10.114.0.129;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP BF 130 SW01;network;Équipement réseau inaccessible;2;1;10.232.0.123;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;LPA 120 SW04;network;Équipement réseau inaccessible;2;1;10.113.0.124;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP_BA_53_MAG2;network;Équipement réseau inaccessible;2;1;10.111.0.133;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP_BA_53_EXP1;network;Équipement réseau inaccessible;2;1;10.111.0.135;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;CERP_BA_53_MAG1;network;Équipement réseau inaccessible;2;1;10.111.0.132;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:20:38;00:02:36;FREQ FRA;network;Équipement réseau inaccessible;2;1;10.222.0.105;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BSSRV01;ping;Serveur hors ligne;2;1;10.101.0.31;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BSSRV02;ping;Serveur hors ligne;2;1;10.101.0.32;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BWSRV02;ping;Serveur hors ligne;2;1;10.104.0.32;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BSSRV03B;ping;Serveur hors ligne;2;1;10.101.0.87;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BSSRV11;ping;Serveur hors ligne;2;1;10.101.0.34;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BSSRV36;ping;Serveur hors ligne;2;1;10.101.0.41;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BCSRV04;ping;Serveur hors ligne;2;1;192.168.209.52;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BCSRV05;ping;Serveur hors ligne;2;1;192.168.209.56;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BEDSK204;ping;Serveur hors ligne;2;1;10.101.0.147;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;BEDSK263;ping;Serveur hors ligne;2;1;10.101.0.159;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;CERPPBI-RDS;ping;Serveur hors ligne;2;1;192.168.215.4;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;PBI-DB;ping;Serveur hors ligne;2;1;192.168.215.2;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;proxy01;ping;Serveur hors ligne;2;1;10.101.0.139;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;proxy01-2;ping;Serveur hors ligne;2;1;10.101.0.140;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;proxy03;ping;Serveur hors ligne;2;1;10.103.0.139;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;proxy04;ping;Serveur hors ligne;2;1;10.104.0.139;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;dhcp1;ping;Serveur hors ligne;2;1;10.101.0.156;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;dhcp4;ping;Serveur hors ligne;2;1;10.104.0.156;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;glpi;ping;Serveur hors ligne;2;1;10.101.0.38;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:20:38;00:00:46;snmp;ping;Serveur hors ligne;2;1;10.101.0.36;2 pertes consécutives
+2026-09-05 04:41:12;2026-09-07 21:21:16;64:40:04;CERP_BW_53_MAG3;network;Équipement réseau inaccessible;2;1;10.114.0.133;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BF_46_MAG1;network;Équipement réseau inaccessible;2;1;10.232.0.132;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BA_33_1;network;Équipement réseau inaccessible;2;1;10.111.0.134;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BS_33_2;network;Équipement réseau inaccessible;2;1;10.111.0.131;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BW_53_EXP2;network;Équipement réseau inaccessible;2;1;10.114.0.130;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BS_33_1;network;Équipement réseau inaccessible;2;1;10.111.0.130;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BW_53_EXP1;network;Équipement réseau inaccessible;2;1;10.114.0.135;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BF_44_Etage;network;Équipement réseau inaccessible;2;1;10.232.0.136;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BW_53_RCP1;network;Équipement réseau inaccessible;2;1;10.114.0.136;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BF_46_RCP;network;Équipement réseau inaccessible;2;1;10.232.0.133;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BF_44_Hall1;network;Équipement réseau inaccessible;2;1;10.232.0.134;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BF_46_MAG2;network;Équipement réseau inaccessible;2;1;10.232.0.131;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BA_36_RCP1;network;Équipement réseau inaccessible;2;1;10.111.0.136;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BH_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.0.132;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;SAD_53_02;network;Équipement réseau inaccessible;2;1;10.113.0.127;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BF_46_EXP2;network;Équipement réseau inaccessible;2;1;10.232.0.129;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BW_53_MAG4;network;Équipement réseau inaccessible;2;1;10.114.0.138;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BH_53_MAG2;network;Équipement réseau inaccessible;2;1;10.113.0.133;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BF_44_Hall2;network;Équipement réseau inaccessible;2;1;10.232.0.135;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP Informatique;network;Équipement réseau inaccessible;2;1;10.111.0.145;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:21:16;00:03:14;CERP_BW_33_1;network;Équipement réseau inaccessible;2;1;10.114.0.134;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:21:16;00:01:24;proxy02;ping;Serveur hors ligne;2;1;10.102.0.139;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:21:16;00:01:24;proxy02-2;ping;Serveur hors ligne;2;1;10.222.0.139;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:21:16;00:01:24;dhcp2;ping;Serveur hors ligne;2;1;10.102.0.156;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:21:16;00:01:24;dhcp2-2;ping;Serveur hors ligne;2;1;10.222.0.156;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:21:16;00:01:24;dhcp3;ping;Serveur hors ligne;2;1;10.103.0.156;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;CERP_BH_53_EXP1;network;Équipement réseau inaccessible;2;1;10.113.0.135;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;CERP_BF_46_EXP1;network;Équipement réseau inaccessible;2;1;10.232.0.130;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;CERP_BH_33_1;network;Équipement réseau inaccessible;2;1;10.113.0.134;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;LPA_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.0.128;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;CERP_BH_36_RCP1;network;Équipement réseau inaccessible;2;1;10.113.0.136;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;SAD_53_01;network;Équipement réseau inaccessible;2;1;10.113.0.126;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;CERP_BW_53_MAG2;network;Équipement réseau inaccessible;2;1;10.114.0.132;2 pertes consécutives
+2026-09-07 21:18:02;2026-09-07 21:22:07;00:04:05;CERP_BW_53_MAG1;network;Équipement réseau inaccessible;2;1;10.114.0.131;2 pertes consécutives
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;BEDSK204;service;Power BI Gateway ne fonctionne pas normalement;error;running;10.101.0.147;Service : Power BI Gateway
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;BEDSK263;service;Outlook ne fonctionne pas normalement;error;running;10.101.0.159;Service : Outlook
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;proxy01;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.139;Service : Squid
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;proxy01;service;Webmin ne fonctionne pas normalement;inactive;running;10.101.0.139;Service : Webmin
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;proxy01-2;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.140;Service : Squid
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.102.0.139;Service : Squid
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-07 21:19:52;2026-09-07 21:22:07;00:02:15;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-07 21:34:07;2026-09-07 21:52:07;00:18:00;BEDSK263;service;Outlook ne fonctionne pas normalement;error;running;10.101.0.159;Service : Outlook
+2026-09-07 21:34:07;2026-09-07 21:52:07;00:18:00;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-09-07 21:33:08;2026-09-07 23:37:08;02:04:00;BSSRV11;ping;Serveur hors ligne;2;1;10.101.0.34;2 pertes consécutives
+2026-09-08 05:13:08;2026-09-08 05:16:07;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-08 10:46:08;2026-09-08 10:57:07;00:10:59;BSSRV11;ping;Serveur hors ligne;2;1;10.101.0.34;2 pertes consécutives
+2026-08-21 12:06:08;2026-09-08 13:06:04;432:59:56;CERP_BT_53_MAG1;network;Équipement réseau inaccessible;2;1;10.112.0.132;2 pertes consécutives
+2026-08-21 12:06:08;2026-09-08 13:06:04;432:59:56;CERP_BT_53_MAG2;network;Équipement réseau inaccessible;2;1;10.112.0.133;2 pertes consécutives
+2026-08-21 12:06:08;2026-09-08 13:06:04;432:59:56;CERP_BT_36_1;network;Équipement réseau inaccessible;2;1;10.112.0.134;2 pertes consécutives
+2026-08-21 12:06:08;2026-09-08 13:06:04;432:59:56;CERP_BT_53_EXP1;network;Équipement réseau inaccessible;2;1;10.112.0.137;2 pertes consécutives
+2026-08-21 12:06:08;2026-09-08 13:07:02;433:00:54;CERP BT 120 SW02;network;Équipement réseau inaccessible;2;1;10.112.0.124;2 pertes consécutives
+2026-09-08 21:46:03;2026-09-08 23:49:02;02:02:59;BSSRV11;ping;Serveur hors ligne;2;1;10.101.0.34;2 pertes consécutives
+2026-09-09 05:13:03;2026-09-09 05:16:02;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-09 11:10:03;2026-09-09 11:16:03;00:06:00;BEDSK204;service;Power BI Gateway ne fonctionne pas normalement;stopped;running;10.101.0.147;Service : Power BI Gateway
+2026-09-09 11:13:02;2026-09-09 11:19:03;00:06:01;BEDSK263;service;Outlook ne fonctionne pas normalement;error;running;10.101.0.159;Service : Outlook
+2026-09-09 11:13:02;2026-09-09 11:19:03;00:06:01;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-09-09 12:19:02;2026-09-09 12:20:04;00:01:02;BSSRV03B;ping;Serveur hors ligne;2;1;10.101.0.87;2 pertes consécutives
+2026-09-09 12:58:03;2026-09-09 13:00:05;00:02:02;BSSRV36;ping;Serveur hors ligne;2;1;10.101.0.41;2 pertes consécutives
+2026-09-09 12:58:03;2026-09-09 13:01:02;00:02:59;BEDSK263;service;Outlook ne fonctionne pas normalement;error;running;10.101.0.159;Service : Outlook
+2026-09-09 12:58:03;2026-09-09 13:01:02;00:02:59;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-09-09 13:04:03;2026-09-09 13:05:03;00:01:00;BSSRV36;ping;Serveur hors ligne;2;1;10.101.0.41;2 pertes consécutives
+2026-09-09 12:58:03;2026-09-09 13:51:03;00:53:00;BEDSK204;service;Power BI Gateway ne fonctionne pas normalement;error;running;10.101.0.147;Service : Power BI Gateway
+2026-09-09 15:16:03;2026-09-09 15:25:03;00:09:00;BEDSK263;service;StageNow ne fonctionne pas normalement;stopped;running;10.101.0.159;Service : StageNow
+2026-09-09 16:45:04;2026-09-09 16:49:02;00:03:58;proxy02;ping;Serveur hors ligne;2;1;10.102.0.139;2 pertes consécutives
+2026-09-09 16:45:04;2026-09-09 16:49:02;00:03:58;dhcp2;ping;Serveur hors ligne;2;1;10.102.0.156;2 pertes consécutives
+2026-09-09 16:46:03;2026-09-09 16:49:02;00:02:59;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.102.0.139;Service : Squid
+2026-09-10 05:13:03;2026-09-10 05:16:02;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-10 15:21:09;2026-09-10 15:22:08;00:00:59;Passerelle HAR;network;Équipement réseau inaccessible;2;1;10.103.0.1;2 pertes consécutives
+2026-09-10 19:43:03;2026-09-10 20:10:04;00:27:01;BEDSK263;service;Outlook ne fonctionne pas normalement;stopped;running;10.101.0.159;Service : Outlook
+2026-09-10 19:43:03;2026-09-10 20:10:04;00:27:01;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-09-10 20:31:03;2026-09-10 20:34:03;00:03:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-10 20:31:03;2026-09-10 20:34:03;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-10 20:31:03;2026-09-10 20:34:03;00:03:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-10 20:54:08;2026-09-10 20:55:10;00:01:02;LPA_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.0.128;2 pertes consécutives
+2026-09-10 20:54:08;2026-09-10 20:55:10;00:01:02;Passerelle HAR;network;Équipement réseau inaccessible;2;1;10.103.0.1;2 pertes consécutives
+2026-09-10 20:55:10;2026-09-10 20:56:04;00:00:54;CERP_BH_36_RCP1;network;Équipement réseau inaccessible;2;1;10.113.0.136;2 pertes consécutives
+2026-09-11 05:13:03;2026-09-11 05:16:02;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-11 06:46:07;2026-09-11 06:47:03;00:00:56;CERP BH 120 SW02;network;Équipement réseau inaccessible;2;1;10.113.0.125;2 pertes consécutives
+2026-09-11 06:46:07;2026-09-11 06:47:03;00:00:56;CERP_BH_36_RCP1;network;Équipement réseau inaccessible;2;1;10.113.0.136;2 pertes consécutives
+2026-09-12 05:25:03;2026-09-12 05:28:02;00:02:59;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-13 05:25:02;2026-09-13 05:28:02;00:03:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-14 05:13:02;2026-09-14 05:16:02;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-14 10:11:07;2026-09-14 10:12:06;00:00:59;LPA_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.0.128;2 pertes consécutives
+2026-09-14 10:12:06;2026-09-14 10:13:06;00:01:00;ADR PHY WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.3;2 pertes consécutives
+2026-09-14 10:16:05;2026-09-14 10:17:07;00:01:02;CERP BH 120 SW02;network;Équipement réseau inaccessible;2;1;10.113.0.125;2 pertes consécutives
+2026-09-15 05:13:03;2026-09-15 05:16:02;00:02:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-15 10:14:05;2026-09-15 10:15:05;00:01:00;ADR PHY WIN FRA;network;Équipement réseau inaccessible;2;1;10.232.0.3;2 pertes consécutives
+2026-09-15 10:22:03;2026-09-15 10:25:03;00:03:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-16 05:13:02;2026-09-16 05:16:02;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-16 09:04:08;2026-09-16 09:05:07;00:00:59;ADR PHY WIN HAR;network;Équipement réseau inaccessible;2;1;10.113.0.3;2 pertes consécutives
+2026-09-16 09:05:07;2026-09-16 09:06:07;00:01:00;Passerelle HAR;network;Équipement réseau inaccessible;2;1;10.103.0.1;2 pertes consécutives
+2026-09-15 19:22:03;2026-09-16 09:37:05;14:15:02;BEDSK204;service;Power BI Gateway ne fonctionne pas normalement;error;running;10.101.0.147;Service : Power BI Gateway
+2026-09-15 19:25:03;2026-09-16 09:40:03;14:15:00;BEDSK263;service;Outlook ne fonctionne pas normalement;error;running;10.101.0.159;Service : Outlook
+2026-09-15 19:25:03;2026-09-16 09:40:03;14:15:00;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-09-16 12:25:02;2026-09-16 12:28:02;00:03:00;BEDSK263;service;StageNow ne fonctionne pas normalement;stopped;running;10.101.0.159;Service : StageNow
+2026-09-16 12:25:02;2026-09-16 12:28:02;00:03:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-17 05:13:03;2026-09-17 05:16:03;00:03:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-18 05:18:03;2026-09-18 05:19:04;00:01:01;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-18 05:25:04;2026-09-18 05:26:04;00:01:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-18 22:55:03;2026-09-18 22:57:04;00:02:01;proxy01;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.139;Service : Squid
+2026-09-18 22:55:03;2026-09-18 22:57:04;00:02:01;proxy01;service;Webmin ne fonctionne pas normalement;inactive;running;10.101.0.139;Service : Webmin
+2026-09-18 22:55:03;2026-09-18 22:57:04;00:02:01;proxy01-2;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.140;Service : Squid
+2026-09-18 22:55:03;2026-09-18 22:57:04;00:02:01;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-18 22:57:04;2026-09-18 22:58:03;00:00:59;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-18 22:57:04;2026-09-18 22:59:03;00:01:59;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-19 05:13:04;2026-09-19 05:14:04;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-19 05:18:03;2026-09-19 05:19:04;00:01:01;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-20 05:03:03;2026-09-20 05:04:04;00:01:01;proxy01-2;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.140;Service : Squid
+2026-09-20 05:13:03;2026-09-20 05:14:04;00:01:01;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-20 05:18:04;2026-09-20 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-21 05:13:03;2026-09-21 05:14:04;00:01:01;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-21 05:18:04;2026-09-21 05:19:03;00:00:59;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-22 05:03:04;2026-09-22 05:04:03;00:00:59;proxy01-2;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.140;Service : Squid
+2026-09-22 05:13:04;2026-09-22 05:14:04;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-22 05:18:03;2026-09-22 05:19:03;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-22 06:32:04;2026-09-22 06:33:04;00:01:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-22 17:04:04;2026-09-22 17:07:04;00:03:00;BEDSK204;service;Power BI Gateway ne fonctionne pas normalement;stopped;running;10.101.0.147;Service : Power BI Gateway
+2026-09-23 05:13:04;2026-09-23 05:14:04;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-23 05:18:04;2026-09-23 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-23 06:24:04;2026-09-23 06:25:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-23 09:48:06;2026-09-23 09:49:04;00:00:58;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-23 11:41:03;2026-09-23 13:19:03;01:38:00;BEDSK263;service;StageNow ne fonctionne pas normalement;stopped;running;10.101.0.159;Service : StageNow
+2026-09-23 13:24:04;2026-09-23 13:26:04;00:02:00;BEDSK263;ping;Serveur hors ligne;2;1;10.101.0.159;2 pertes consécutives
+2026-09-23 13:31:04;2026-09-23 13:35:04;00:04:00;BEDSK263;ping;Serveur hors ligne;2;1;10.101.0.159;2 pertes consécutives
+2026-09-23 13:23:04;2026-09-23 13:39:03;00:15:59;BEDSK263;service;Outlook ne fonctionne pas normalement;error;running;10.101.0.159;Service : Outlook
+2026-09-23 13:23:04;2026-09-23 13:39:03;00:15:59;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-09-23 13:56:04;2026-09-23 13:58:04;00:02:00;CERP Informatique;network;Équipement réseau inaccessible;2;1;10.111.9.145;2 pertes consécutives
+2026-09-23 14:18:10;2026-09-23 14:19:07;00:00:57;CERP BH 350 SW02;network;Équipement réseau inaccessible;2;1;10.113.0.202;2 pertes consécutives
+2026-09-23 16:23:04;2026-09-23 16:25:04;00:02:00;BEDSK263;service;StageNow ne fonctionne pas normalement;stopped;running;10.101.0.159;Service : StageNow
+2026-09-24 05:18:04;2026-09-24 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-24 05:25:04;2026-09-24 05:26:04;00:01:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-24 07:16:04;2026-09-24 07:31:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.14%;97%;192.168.209.56;
+2026-09-24 07:46:03;2026-09-24 08:31:04;00:45:01;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.02%;97%;192.168.209.56;
+2026-09-24 09:46:04;2026-09-24 10:01:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.24%;97%;192.168.209.56;
+2026-09-24 10:16:04;2026-09-24 10:31:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.11%;97%;192.168.209.56;
+2026-09-25 05:13:04;2026-09-25 05:14:03;00:00:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-25 05:18:04;2026-09-25 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-25 06:19:04;2026-09-25 06:20:05;00:01:01;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-25 07:16:04;2026-09-25 07:46:03;00:29:59;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.24%;97%;192.168.209.56;
+2026-09-25 09:46:04;2026-09-25 10:01:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.14%;97%;192.168.209.56;
+2026-09-25 10:16:03;2026-09-25 10:31:04;00:15:01;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.02%;97%;192.168.209.56;
+2026-09-26 05:13:04;2026-09-26 05:14:04;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-26 05:18:03;2026-09-26 05:19:04;00:01:01;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-26 07:16:04;2026-09-26 07:31:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.24%;97%;192.168.209.56;
+2026-09-26 08:16:03;2026-09-26 08:31:04;00:15:01;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.24%;97%;192.168.209.56;
+2026-09-26 09:46:03;2026-09-26 10:01:04;00:15:01;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.25%;97%;192.168.209.56;
+2026-09-26 10:16:04;2026-09-26 10:31:03;00:14:59;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.07%;97%;192.168.209.56;
+2026-09-26 12:16:04;2026-09-26 12:31:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.09%;97%;192.168.209.56;
+2026-09-27 05:13:03;2026-09-27 05:14:03;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-27 05:18:04;2026-09-27 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-27 07:16:04;2026-09-27 07:31:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.24%;97%;192.168.209.56;
+2026-09-28 05:13:04;2026-09-28 05:14:03;00:00:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-09-28 05:18:04;2026-09-28 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-28 07:16:04;2026-09-28 07:31:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.24%;97%;192.168.209.56;
+2026-09-28 09:46:04;2026-09-28 10:01:03;00:14:59;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97%;97%;192.168.209.56;
+2026-09-28 10:16:04;2026-09-28 10:31:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.15%;97%;192.168.209.56;
+2026-09-29 05:18:04;2026-09-29 05:19:03;00:00:59;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-29 05:25:04;2026-09-29 05:26:04;00:01:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-29 07:16:04;2026-09-29 07:31:03;00:14:59;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.03%;97%;192.168.209.56;
+2026-09-29 10:32:04;2026-09-29 10:33:04;00:01:00;BSSRV36;ping;Serveur hors ligne;2;1;10.101.0.41;2 pertes consécutives
+2026-09-29 11:07:04;2026-09-29 11:08:04;00:01:00;dhcp2;ping;Serveur hors ligne;6;1;10.222.0.156;6 pertes consécutives
+2026-09-29 11:34:04;2026-09-29 11:35:04;00:01:00;proxy02-2;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-29 11:38:03;2026-09-29 11:39:04;00:01:01;proxy02;ping;Serveur hors ligne;6;1;10.222.0.139;6 pertes consécutives
+2026-09-29 11:38:03;2026-09-29 11:39:04;00:01:01;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-29 14:31:04;2026-09-29 14:37:04;00:06:00;snmp;ping;Serveur hors ligne;2;1;90.101.0.36;2 pertes consécutives
+2026-09-29 16:03:05;2026-09-29 16:04:03;00:00:58;SAN SWITCH 1;network;Équipement réseau inaccessible;2;1;10.101.0.51;2 pertes consécutives
+2026-09-29 16:03:05;2026-09-29 16:04:03;00:00:58;SAN SWITCH 1 COU;network;Équipement réseau inaccessible;2;1;10.101.0.51;2 pertes consécutives
+2026-09-30 05:18:03;2026-09-30 05:19:03;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-09-30 05:25:04;2026-09-30 05:26:03;00:00:59;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-09-30 06:18:03;2026-09-30 06:19:03;00:01:00;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-10-01 05:13:04;2026-10-01 05:14:04;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-01 05:18:04;2026-10-01 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-01 07:16:03;2026-10-01 07:31:04;00:15:01;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;97.34%;97%;192.168.209.56;
+2026-10-02 05:13:04;2026-10-02 05:14:04;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-02 05:18:03;2026-10-02 05:19:04;00:01:01;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-03 05:13:04;2026-10-03 05:14:03;00:00:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-03 05:18:04;2026-10-03 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-03 09:46:04;2026-10-03 10:01:04;00:15:00;BCSRV05;ram;Utilisation mémoire au-dessus du seuil;98.63%;97%;192.168.209.56;
+2026-10-04 05:13:04;2026-10-04 05:14:03;00:00:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-04 05:18:04;2026-10-04 05:19:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-05 05:13:04;2026-10-05 05:14:03;00:00:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-05 05:18:03;2026-10-05 05:19:03;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-05 16:57:06;2026-10-05 17:41:05;00:43:59;BSSRV01;ping;Serveur hors ligne;2;1;101.101.0.31;2 pertes consécutives
+2026-10-05 17:45:05;2026-10-05 17:51:05;00:06:00;BSSRV02;ping;Serveur hors ligne;2;1;109.101.0.32;2 pertes consécutives
+2026-10-05 19:16:06;2026-10-05 21:20:08;02:04:02;BEDSK204;service;Power BI Gateway ne fonctionne pas normalement;error;running;10.101.0.147;Service : Power BI Gateway
+2026-10-05 21:33:05;2026-10-05 21:37:05;00:04:00;BEDSK263;service;Outlook ne fonctionne pas normalement;error;running;10.101.0.159;Service : Outlook
+2026-10-05 21:33:05;2026-10-05 21:37:05;00:04:00;BEDSK263;service;StageNow ne fonctionne pas normalement;error;running;10.101.0.159;Service : StageNow
+2026-10-06 05:12:06;2026-10-06 05:13:06;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-06 05:17:06;2026-10-06 05:18:06;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-06 22:21:04;2026-10-06 22:22:04;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-07 00:21:05;2026-10-07 00:22:03;00:00:58;bsvi2cou;network;Équipement réseau inaccessible;2;1;10.104.0.15;2 pertes consécutives
+2026-10-07 05:13:04;2026-10-07 05:14:03;00:00:59;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-07 05:18:03;2026-10-07 05:19:03;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-07 09:06:09;2026-10-07 09:07:08;00:00:59;CERP BH 350 SW01;network;Équipement réseau inaccessible;2;1;10.113.0.200;2 pertes consécutives
+2026-10-07 09:07:08;2026-10-07 09:08:05;00:00:57;CERP_BH_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.0.132;2 pertes consécutives
+2026-10-07 11:48:05;2026-10-07 12:01:03;00:12:58;CERP_BH_53_MAG1;network;Équipement réseau inaccessible;2;1;10.113.90.132;2 pertes consécutives
+2026-10-07 12:12:04;2026-10-07 13:08:03;00:55:59;BSSRV01;ping;Serveur hors ligne;2;1;10.101.40.31;2 pertes consécutives
+2026-10-07 13:11:03;2026-10-07 13:42:03;00:31:00;BSSRV02;ping;Serveur hors ligne;2;1;10.101.50.32;2 pertes consécutives
+2026-10-07 13:51:04;2026-10-07 13:57:03;00:05:59;BSSRV01;ping;Serveur hors ligne;2;1;10.101.90.31;2 pertes consécutives
+2026-10-08 05:13:03;2026-10-08 05:14:04;00:01:01;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-08 05:18:04;2026-10-08 05:19:03;00:00:59;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-09 05:13:01;2026-10-09 05:14:02;00:01:01;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-09 05:18:02;2026-10-09 05:19:02;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-09 06:27:02;2026-10-09 06:28:02;00:01:00;proxy01-2;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.140;Service : Squid
+2026-10-09 06:35:02;2026-10-09 06:36:02;00:01:00;proxy02;service;Squid ne fonctionne pas normalement;inactive;running;10.222.0.139;Service : Squid
+2026-10-10 05:13:02;2026-10-10 05:14:02;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-10 05:18:02;2026-10-10 05:19:02;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-10 06:17:03;2026-10-10 06:18:01;00:00:58;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-10 06:22:02;2026-10-10 06:23:02;00:01:00;proxy01;service;Squid ne fonctionne pas normalement;inactive;running;10.101.0.139;Service : Squid
+2026-10-10 16:23:02;2026-10-10 16:24:02;00:01:00;CERPPBI-RDS;ping;Serveur hors ligne;2;1;192.168.215.4;2 pertes consécutives
+2026-10-10 16:23:02;2026-10-10 16:24:02;00:01:00;PBI-DB;ping;Serveur hors ligne;2;1;192.168.215.2;2 pertes consécutives
+2026-10-11 05:13:02;2026-10-11 05:14:02;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-11 05:18:02;2026-10-11 05:19:03;00:01:01;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-11 16:14:02;2026-10-11 16:21:02;00:07:00;CERPPBI-RDS;ping;Serveur hors ligne;2;1;192.168.215.4;2 pertes consécutives
+2026-10-11 16:14:02;2026-10-11 16:21:02;00:07:00;PBI-DB;ping;Serveur hors ligne;2;1;192.168.215.2;2 pertes consécutives
+2026-10-12 05:13:02;2026-10-12 05:14:02;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-12 05:18:02;2026-10-12 05:19:02;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-13 05:13:02;2026-10-13 05:14:02;00:01:00;proxy03;service;Squid ne fonctionne pas normalement;inactive;running;10.103.0.139;Service : Squid
+2026-10-13 05:18:02;2026-10-13 05:19:02;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-13 09:55:02;2026-10-13 09:56:02;00:01:00;CERPPBI-RDS;ping;Serveur hors ligne;2;1;192.168.215.4;2 pertes consécutives
+2026-10-13 09:55:02;2026-10-13 09:56:02;00:01:00;PBI-DB;ping;Serveur hors ligne;2;1;192.168.215.2;2 pertes consécutives
+2026-10-14 05:18:02;2026-10-14 05:19:02;00:01:00;proxy04;service;Squid ne fonctionne pas normalement;inactive;running;10.104.0.139;Service : Squid
+2026-10-14 05:10:03;2026-10-14 08:26:03;03:16:00;CERPPBI-RDS;ping;Serveur hors ligne;2;1;192.168.215.4;2 pertes consécutives
+2026-10-14 05:10:03;2026-10-14 08:26:03;03:16:00;PBI-DB;ping;Serveur hors ligne;2;1;192.168.215.2;2 pertes consécutives
+2026-10-14 10:51:02;2026-10-14 10:53:02;00:02:00;BSSRV36;ping;Serveur hors ligne;2;1;10.101.0.41;2 pertes consécutives
+2026-10-14 11:02:02;2026-10-14 11:03:02;00:01:00;BSSRV36;ping;Serveur hors ligne;2;1;10.101.0.41;2 pertes consécutives
+2026-10-14 11:14:02;2026-10-14 11:16:02;00:02:00;BSSRV36;service;WSUS ne fonctionne pas normalement;stopped;running;10.101.0.41;Service : WSUS
+2026-10-14 12:29:01;2026-10-14 12:32:02;00:03:01;BSSRV01;ping;Serveur hors ligne;2;1;190.101.0.31;2 pertes consécutives

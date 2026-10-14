@@ -251,7 +251,14 @@ if [ ! -f /etc/ssl/certs/ssl-cert-snakeoil.pem ]; then
 fi
 a2dissite 000-default.conf -q 2>/dev/null || true
 a2ensite supervision.conf -q
-systemctl reload apache2
+mkdir -p /etc/systemd/system/apache2.service.d
+cat > /etc/systemd/system/apache2.service.d/override.conf <<'EOF'
+[Service]
+ProtectHome=false
+InaccessiblePaths=
+EOF
+systemctl daemon-reload
+systemctl restart apache2
 
 log_step 10 "Application des permissions"
 find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true

@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const serversResponse = await fetch('/api/data/servers.json');
             if (!serversResponse.ok) throw new Error('Impossible de charger servers.json');
 	    const raw = await serversResponse.json();
-            const servers = Array.isArray(raw) ? raw : (raw.servers || []);
+	    const servers = Array.isArray(raw) ? raw : (raw.servers || []);
 	    const antiCache = `?v=${Date.now()}`;
             const promises = servers.map(server => fetch(`/api/data/${server.name}_disks.json${antiCache}`).then(r => r.ok ? r.json() : []));
             const allDisksData = await Promise.all(promises);
@@ -51,10 +51,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (allDisksChartInstance) allDisksChartInstance.destroy();
         const datasets = [];
         const colors = ['#e74c3c','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#f39c12','#95a5a6'];
-        let colorIndex = 0;
+	let colorIndex = 0;
 	const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 90);
-	servers.forEach((server, idx) => {
+        servers.forEach((server, idx) => {
             const diskHistory = allDisksData[idx] || [];
             const validEntries = diskHistory.filter(e => e.disks && typeof e.disks === "object" && !e.disks.error);
             const diskNames = new Set();

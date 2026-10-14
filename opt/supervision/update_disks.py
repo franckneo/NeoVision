@@ -6,7 +6,7 @@ import logging
 import time
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_default_local_user
+from lib.servers import get_servers
 from filelock import FileLock, Timeout
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry

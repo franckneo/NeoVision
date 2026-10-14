@@ -145,6 +145,7 @@ def read_servers():
     data = load_json(SERVERS_FILE, [])
     if isinstance(data, dict):
         return data.get("servers", [])
+    return data if isinstance(data, list) else []
 def read_server_config():
     data = load_json(CONFIG_FILE, {})
     return data if isinstance(data, dict) else {}

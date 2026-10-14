@@ -6,11 +6,13 @@ import subprocess
 from datetime import datetime
 from filelock import FileLock, Timeout
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_default_local_user
+from lib.servers import get_servers
 from lib.retry import run_with_retry
+
 STATUS_FILE="/opt/supervision/data/update_status.json"
 LOCK_FILE="/opt/supervision/data/update_lstatus.lock"
 LOG_FILE="/var/log/supervision/update_lstatus.log"
+
 logger=logging.getLogger()
 logger.setLevel(logging.INFO)
 handler=RotatingFileHandler(LOG_FILE,maxBytes=5*1024*1024,backupCount=1)
@@ -48,18 +50,22 @@ def get_linux_update_status(ip,user):
         except Exception:
             logging.exception(f"[{ip}] invalid update count")
             updates_pending=0
+
         return {
             "updates_pending":updates_pending,
             "reboot_required":reboot_required
         }
+
     except Exception:
         logging.exception(f"Linux update failed {ip}")
         return {"error":"injoignable"}
+
     finally:
         logging.info(f"[{ip}] update check done")
 
 def main():
     start_time=datetime.now()
+
     write_status({
         "running":True,
         "message":"running",
@@ -67,10 +73,13 @@ def main():
         "started_at":start_time.isoformat(),
         "pid":os.getpid()
     })
+
     logging.info("========== START lstatus ==========")
+
     try:
         servers=get_servers()
         linux_servers=[s for s in servers if s.get("type")=="linux"]
+
         for s in linux_servers:
             name=s.get("name")
             ip=s.get("ip")
@@ -80,7 +89,7 @@ def main():
                 "reboot_required":False
             }
             result=run_with_retry( get_linux_update_status, 2, 2, ip, s.get("user") or get_default_local_user() )
-            if isinstance(result,dict) and "error" not in result:
+	    if isinstance(result,dict) and "error" not in result:
                 status=result
             path=f"/opt/supervision/data/{name}_status.json"
             try:

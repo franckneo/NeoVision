@@ -4,23 +4,33 @@ error_reporting(E_ALL);
 require_once '/var/www/common/init.php';
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) { header("Location: index.php"); exit(); }
 $currentLang = $_SESSION['lang'] ?? 'fr';
-
 $serversFile = "/opt/supervision/data/servers.json";
 $configFile = "/opt/supervision/data/alert_config.json";
 $netConfigFile = "/opt/supervision/data/network_alert_config.json";
 $channelsFile = "/opt/supervision/data/notification_channels.json";
-$servers = json_decode(@file_get_contents($serversFile), true) ?: [];
+$serversFile = "/opt/supervision/data/servers.json";
+$configFile = "/opt/supervision/data/alert_config.json";
+$netConfigFile = "/opt/supervision/data/network_alert_config.json";
+$channelsFile = "/opt/supervision/data/notification_channels.json";
+$rawServersData = json_decode(@file_get_contents($serversFile), true) ?: [];
+$rawList = isset($rawServersData['servers']) ? $rawServersData['servers'] : $rawServersData;
+$servers = [];
+foreach ($rawList as $k => $srv) {
+    if (is_array($srv) && !empty($srv['name'])) {
+        $servers[$srv['name']] = $srv;
+    } elseif (is_string($k)) {
+        $servers[$k] = $srv;
+    }
+}
 $config = json_decode(@file_get_contents($configFile), true) ?: [];
 $netConfig = json_decode(@file_get_contents($netConfigFile), true) ?: [];
 $userChannels = json_decode(@file_get_contents($channelsFile), true) ?: [];
 $netCategories = ['switchs' => 'tab-switchs', 'aps' => 'tab-aps', 'others' => 'tab-others'];
-
 function notif_h($value): string { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
 function getDiskDisplayName($diskName) {
     if (strpos($diskName, 'ubuntu--vg-ubuntu--lv') !== false || strpos($diskName, '--vg-root') !== false) return __('lbl_disk_root_lvm', 'Racine LVM');
     return (strlen($diskName) > 20) ? basename($diskName) : $diskName;
 }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string)($_POST['action'] ?? '');
     if ($action === 'save_channels') {
@@ -61,6 +71,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['success' => true]);
         exit();
     }
+    if (isset($_POST['as400']) && is_array($_POST['as400'])) {
+        $as400Data = [];
+        foreach (range(0, 7) as $level) {
+            $levelData = $_POST['as400'][$level] ?? [];
+            $emailsRaw = is_array($levelData) ? (string)($levelData['emails'] ?? '') : '';
+            $as400Data[(string)$level] = ['enabled' => is_array($levelData) && isset($levelData['enabled']), 'emails' => array_values(array_filter(array_map('trim', explode(',', $emailsRaw)), static fn($v) => $v !== ''))];
+        }
+        file_put_contents('/opt/supervision/data/as400_alert_config.json', json_encode($as400Data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+    }
+    if (isset($_POST['global_settings'])) {
+        $config['reminder_interval'] = max(0, (int)($_POST['reminder_interval'] ?? 0));
+        file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        if (!isset($netConfig['reminder_intervals']) || !is_array($netConfig['reminder_intervals'])) {
+            $netConfig['reminder_intervals'] = [];
+        }
+        $netConfig['reminder_intervals']['switchs'] = max(0, (int)($_POST['reminder_interval_switchs'] ?? 0));
+        $netConfig['reminder_intervals']['aps']     = max(0, (int)($_POST['reminder_interval_aps'] ?? 0));
+        $netConfig['reminder_intervals']['others']  = max(0, (int)($_POST['reminder_interval_others'] ?? 0));
+        file_put_contents($netConfigFile, json_encode($netConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        $as400ConfigFile = '/opt/supervision/data/as400_alert_config.json';
+        $as400Raw = json_decode(@file_get_contents($as400ConfigFile), true) ?: [];
+        $as400Raw['reminder_interval'] = max(0, (int)($_POST['reminder_interval_as400'] ?? 0));
+        file_put_contents($as400ConfigFile, json_encode($as400Raw, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        header('Location: mailing.php');
+        exit();
+    }
     $postedServers = $_POST['servers'] ?? [];
     if (is_array($postedServers)) {
         foreach ($postedServers as $name => $data) {
@@ -72,6 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config[$name]['emails'] = array_values(array_filter(array_map('trim', explode(',', $emailsRaw)), static fn($v) => $v !== ''));
             $config[$name]['time_start'] = preg_match('/^\d{2}:\d{2}$/', (string)($data['start'] ?? '')) ? $data['start'] : '08:00';
             $config[$name]['time_end'] = preg_match('/^\d{2}:\d{2}$/', (string)($data['end'] ?? '')) ? $data['end'] : '20:00';
+            if (isset($data['interval'])) {
+                $val = trim((string)$data['interval']);
+                if ($val === '') {
+                    unset($config[$name]['interval']); // hérite du global
+                } else {
+                    $config[$name]['interval'] = max(0, (int)$val);
+                }
+            }
             $config[$name]['update_enabled'] = isset($data['update']);
             $config[$name]['reboot_enabled'] = isset($data['reboot']);
             $config[$name]['offline_enabled'] = isset($data['offline']);
@@ -122,6 +166,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $netConfig[$type][$devName]['time_end'] = $data['end'] ?? '20:00';
                 $netConfig[$type][$devName]['ping_enabled'] = isset($data['ping']);
                 $netConfig[$type][$devName]['max_loss'] = max(0, min(100, (int)($data['max_loss'] ?? 0)));
+		if ($type === 'others') {
+		    $netConfig[$type][$devName]['warning_enabled'] = isset($data['warning_enabled']);
+		    $netConfig[$type][$devName]['warning_value'] = (float)($data['warning_value'] ?? 0);
+		    $netConfig[$type][$devName]['critical_enabled'] = isset($data['critical_enabled']);
+		    $netConfig[$type][$devName]['critical_value'] = (float)($data['critical_value'] ?? 0);
+		    $unit = trim((string)($data['snmp_unit'] ?? ''));
+		    $netConfig[$type][$devName]['snmp_unit'] = mb_substr($unit, 0, 20);
+		}
                 if (array_key_exists('temp_warn', $data)) {
                     $netConfig[$type][$devName]['temp_warn_enabled'] = isset($data['temp_warn_enabled']);
                     $netConfig[$type][$devName]['temp_warn'] = max(0, min(100, (int)$data['temp_warn']));
@@ -156,6 +208,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: mailing.php');
     exit();
 }
+$as400ConfigFile = '/opt/supervision/data/as400_alert_config.json';
+$as400Config = json_decode(@file_get_contents($as400ConfigFile), true) ?: [];
 $allEmailsFound = [];
 foreach ($config as $serverConfig) {
     if (!is_array($serverConfig)) continue;
@@ -172,6 +226,13 @@ foreach ($netConfig as $categoryConfig) {
             $email = trim((string)$email);
             if ($email !== '') $allEmailsFound[] = $email;
         }
+    }
+}
+foreach ($as400Config as $levelConfig) {
+    if (!is_array($levelConfig)) continue;
+    foreach (($levelConfig['emails'] ?? []) as $email) {
+        $email = trim((string)$email);
+        if ($email !== '') $allEmailsFound[] = $email;
     }
 }
 $allEmailsFound = array_values(array_unique($allEmailsFound));
@@ -199,7 +260,8 @@ sort($allEmailsFound);
     <button class="tab-btn active" onclick="switchTab('tab-servers')"><?= __('tab_servers', 'Serveurs') ?></button>
     <button class="tab-btn" onclick="switchTab('tab-switchs')"><?= __('tab_switches', 'Switchs') ?></button>
     <button class="tab-btn" onclick="switchTab('tab-aps')"><?= __('tab_aps', 'Bornes Wi-Fi') ?></button>
-    <button class="tab-btn" onclick="switchTab('tab-others')"><?= __('tab_others', 'Autres') ?></button></div>
+    <button class="tab-btn" onclick="switchTab('tab-others')"><?= __('tab_others', 'Autres') ?></button>
+    <button class="tab-btn" onclick="switchTab('tab-as400')">AS400</button></div>
     <button type="button" class="btn btn-blue" onclick="openModal('modal_channels')"><?= __('btn_notif_channels', '🔔 Type de notif') ?></button>
 </div>
 <div class="search-container">
@@ -208,19 +270,21 @@ sort($allEmailsFound);
         <span id="clearSearchBtn" onclick="clearSearch()">&times;</span>
     </div>
     <span id="rowCount">0 <?= __('lbl_results_suffix', 'résultat(s)') ?></span>
+    <button type="button" class="btn btn-gray btn-settings-right" onclick="openModal('modal_server_settings')" title="Paramètres">⚙</button>
 </div>
 <form id="alertForm" method="post" action="mailing.php">
 <div id="tab-servers" class="tab-content active">
 <table>
 <thead>
 <tr>
-    <th><?= __('col_server', 'Serveur') ?></th><th><?= __('col_type', 'Type') ?></th><th><?= __('col_alerts_enabled', 'Alertes Activées') ?></th><th><?= __('col_notification', 'Notification') ?></th><th><?= __('col_time_range', 'Plage Horaire') ?></th><th class="text-center"><?= __('col_notifications_toggle', 'Notifications') ?></th>
+    <th><?= __('col_server', 'Serveur') ?></th></th><th><?= __('col_ip', 'IP') ?><th><?= __('col_type', 'Type') ?></th><th><?= __('col_alerts_enabled', 'Alertes Activées') ?></th><th><?= __('col_notification', 'Notification') ?></th><th><?= __('col_time_range', 'Plage Horaire') ?></th><th class="text-center"><?= __('col_notifications_toggle', 'Notifications') ?></th>
 </tr>
 </thead>
 <tbody>
 <?php foreach($servers as $s):
     if(!isset($s['name'])) continue;
     $name = $s['name'];
+    $serverIp = $s['ip'] ?? '-';
     $sType = strtolower($s['type'] ?? 'linux');
     $c = $config[$name] ?? [];
     $isGlobalActive = $c['global_enabled'] ?? true;
@@ -257,6 +321,7 @@ sort($allEmailsFound);
 ?>
     <tr class="clickable-row" onclick="openModal('modal_<?=$name?>')">
         <td><strong><?= htmlspecialchars($name) ?></strong></td>
+        <td><?= htmlspecialchars($serverIp) ?></td>
         <td><?= htmlspecialchars($sType) ?></td>
         <td>
             <?php if(empty($activeBadges)): ?><span class="no-alert"><?= __('lbl_none', 'Aucune') ?></span><?php else: ?>
@@ -288,6 +353,10 @@ sort($allEmailsFound);
                 <div class="time-row">
                     <div class="time-field"><label><?= __('lbl_start_time', 'Heure de début') ?></label><input type="time" lang="<?= htmlspecialchars($currentLang) ?>" name="servers[<?=notif_h($name)?>][start]" value="<?=$c['time_start'] ?? '08:00'?>"></div>
                     <div class="time-field"><label><?= __('lbl_end_time', 'Heure de fin') ?></label><input type="time" lang="<?= htmlspecialchars($currentLang) ?>" name="servers[<?=notif_h($name)?>][end]" value="<?=$c['time_end'] ?? '20:00'?>"></div>
+		    <div>
+			<label class="label-bold"><?= __('lbl_reminder_interval', 'Intervalle de rappel (min)') ?></label>
+		        <input type="number" min="0" class="input-full" name="servers[<?=notif_h($name)?>][interval]" value="<?=htmlspecialchars((string)($c['interval'] ?? ''))?>" placeholder="Défaut global : <?=(int)($config['reminder_interval'] ?? 0)?> min">
+		</div>
                 </div>
             </div>
             <div class="grid-3-cols">
@@ -402,7 +471,13 @@ sort($allEmailsFound);
     $ip = $dev['ip'] ?? '-';
     $site = $dev['site'] ?? '-';
     $isTemp = (($dev['type'] ?? '') === 'temperature');
+    $isSnmpOther = ($type === 'others' && strtolower((string)($dev['type'] ?? '')) === 'snmp');
     $nc = $netConfig[$type][$devName] ?? [];
+    $warningEnabled = !empty($nc['warning_enabled']);
+    $warningValue = $nc['warning_value'] ?? 0;
+    $criticalEnabled = !empty($nc['critical_enabled']);
+    $criticalValue = $nc['critical_value'] ?? 0;
+    $snmpUnit = $nc['snmp_unit'] ?? '';
     $isGlobalActive = $nc['enabled'] ?? true;
     $isPingActive = isset($nc['ping_enabled']) ? !empty($nc['ping_enabled']) : true;
     $maxLoss = $nc['max_loss'] ?? 0;
@@ -426,15 +501,22 @@ sort($allEmailsFound);
         <td><strong><?=$escapedDevName?></strong></td>
         <td><?=htmlspecialchars($ip)?></td>
         <td><?=htmlspecialchars($site)?></td>
-        <td>
-            <?php if(!$isPingActive && (!$isTemp || (!$isWarnActive && !$isCritActive))): ?>
-                <span class="no-alert"><?= __('lbl_none', 'Aucune') ?></span>
-            <?php else: ?>
+	    <td>
+            <?php if($isSnmpOther): ?>
                 <?php if($isPingActive): ?><span class="badge-alert">Ping (<?=$maxLoss?> <?=$lossLabel?>)</span><?php endif; ?>
-                <?php if($isTemp && $isWarnActive): ?><span class="badge-alert">Temp Warn (&ge; <?=$tempWarn?>°C)</span><?php endif; ?>
-                <?php if($isTemp && $isCritActive): ?><span class="badge-alert">Temp Crit (&ge; <?=$tempCrit?>°C)</span><?php endif; ?>
+                <?php if($warningEnabled): ?><span class="badge-alert">Warning (<?=htmlspecialchars((string)$warningValue)?> <?=htmlspecialchars((string)$snmpUnit)?>)</span><?php endif; ?>
+                <?php if($criticalEnabled): ?><span class="badge-alert">Critical (<?=htmlspecialchars((string)$criticalValue)?> <?=htmlspecialchars((string)$snmpUnit)?>)</span><?php endif; ?>
+                <?php if(!$isPingActive && !$warningEnabled && !$criticalEnabled): ?><span class="no-alert"><?= __('lbl_none', 'Aucune') ?></span><?php endif; ?>
+            <?php else: ?>
+                <?php if(!$isPingActive && (!$isTemp || (!$isWarnActive && !$isCritActive))): ?>
+                    <span class="no-alert"><?= __('lbl_none', 'Aucune') ?></span>
+                <?php else: ?>
+                    <?php if($isPingActive): ?><span class="badge-alert">Ping (<?=$maxLoss?> <?=$lossLabel?>)</span><?php endif; ?>
+                    <?php if($isTemp && $isWarnActive): ?><span class="badge-alert">Temp Warn (&ge; <?=$tempWarn?>°C)</span><?php endif; ?>
+                    <?php if($isTemp && $isCritActive): ?><span class="badge-alert">Temp Crit (&ge; <?=$tempCrit?>°C)</span><?php endif; ?>
+                <?php endif; ?>
             <?php endif; ?>
-        </td>
+            </td>
         <td>
             <?php if (!empty($mailEmails)): ?><div><span class="badge-alert"><?= __('badge_mail_type', 'MAIL') ?></span> <span><?= htmlspecialchars(implode(", ", $mailEmails)) ?></span></div><?php endif; ?>
             <?php if (!empty($pushEmails)): ?><div class="notif-line"><span class="badge-alert"><?= __('badge_push_type', 'PUSH') ?></span> <span><?= htmlspecialchars(implode(", ", $pushEmails)) ?></span></div><?php endif; ?>
@@ -466,23 +548,27 @@ sort($allEmailsFound);
                 <h3><?= __('col_tolerances', 'Tolérances') ?></h3>
                 <div class="form-group"><label><?= __('lbl_ping_enable', 'Ping (Activer)') ?></label><input type="checkbox" name="net[<?=$type?>][<?=$escapedDevName?>][ping]" <?=$isPingActive?'checked':''?>></div>
                 <div class="form-group"><label><?= __('lbl_max_packet_loss', 'Perte max (paquets)') ?></label><input type="number" name="net[<?=$type?>][<?=$escapedDevName?>][max_loss]" value="<?=$maxLoss?>" min="0" max="100" class="input-number-sm"></div>
-                <?php if($isTemp): ?>
-                    <div class="form-group threshold-group">
-                        <label><strong><?= __('lbl_temperature', 'Température') ?> (°C)</strong></label>
-                        <div class="threshold-row">
-                            <div class="threshold-item">
-                                <span class="badge-warn"><?= __('lbl_warn_prefix', 'Warn:') ?></span>
-                                <input type="checkbox" name="net[<?=$type?>][<?=$escapedDevName?>][temp_warn_enabled]" <?=$isWarnActive?'checked':''?>>
-                                <input type="number" name="net[<?=$type?>][<?=$escapedDevName?>][temp_warn]" value="<?=$tempWarn?>" min="0" max="100" class="input-number-sm">°C
-                            </div>
-                            <div class="threshold-item">
-                                <span class="badge-crit"><?= __('lbl_crit_prefix', 'Crit:') ?></span>
-                                <input type="checkbox" name="net[<?=$type?>][<?=$escapedDevName?>][temp_crit_enabled]" <?=$isCritActive?'checked':''?>>
-                                <input type="number" name="net[<?=$type?>][<?=$escapedDevName?>][temp_crit]" value="<?=$tempCrit?>" min="0" max="100" class="input-number-sm">°C
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
+		<?php if($isSnmpOther): ?>
+		    <div class="form-group threshold-group">
+		        <label><strong>SNMP (<?=htmlspecialchars((string)($dev['snmp'] ?? ''))?>)</strong></label>
+		        <div class="threshold-row">
+		            <div class="threshold-item">
+		                <span class="badge-warn">Warning:</span>
+		                <input type="checkbox" name="net[<?=$type?>][<?=$escapedDevName?>][warning_enabled]" <?=$warningEnabled?'checked':''?>>
+		                <input type="number" step="any" name="net[<?=$type?>][<?=$escapedDevName?>][warning_value]" value="<?=htmlspecialchars((string)$warningValue)?>" class="input-number-sm">
+		            </div>
+		            <div class="threshold-item">
+		                <span class="badge-crit">Critical:</span>
+		                <input type="checkbox" name="net[<?=$type?>][<?=$escapedDevName?>][critical_enabled]" <?=$criticalEnabled?'checked':''?>>
+		                <input type="number" step="any" name="net[<?=$type?>][<?=$escapedDevName?>][critical_value]" value="<?=htmlspecialchars((string)$criticalValue)?>" class="input-number-sm">
+		            </div>
+		            <div class="threshold-item">
+		                <label>Unité</label>
+		                <input type="text" name="net[<?=$type?>][<?=$escapedDevName?>][snmp_unit]" value="<?=htmlspecialchars($snmpUnit)?>" maxlength="20" class="input-number-sm">
+		            </div>
+		        </div>
+		    </div>
+		<?php endif; ?>
             </div>
             <div class="modal-footer"><button type="submit" class="btn btn-blue"><?= __('btn_save', 'Enregistrer') ?></button></div>
         </div>
@@ -492,6 +578,19 @@ sort($allEmailsFound);
 </table>
 </div>
 <?php endforeach; ?>
+<div id="tab-as400" class="tab-content">
+<div class="form-section">
+<h3>Alertes Syslog AS400</h3>
+<p>Les niveaux sont cumulatifs : activer un niveau active aussi les niveaux plus graves.</p>
+<?php $levelNames = ['Emergency', 'Alert', 'Critical', 'Error', 'Warning', 'Notice', 'Informational', 'Debug']; foreach (range(0, 7) as $level): $levelConfig = $as400Config[(string)$level] ?? []; ?>
+<div class="as400-level-row">
+<label><input type="checkbox" name="as400[<?=$level?>][enabled]" value="1" <?=!empty($levelConfig['enabled'])?'checked':''?>> Niveau <?=$level?> - <?=notif_h($levelNames[$level])?></label>
+<input type="text" class="input-full" name="as400[<?=$level?>][emails]" value="<?=notif_h(implode(', ', (array)($levelConfig['emails'] ?? [])))?>" placeholder="Emails ou noms, séparés par des virgules">
+</div>
+<?php endforeach; ?>
+<button type="submit" class="btn btn-blue">Enregistrer</button>
+</div>
+</div>
 </form>
 <div id="modal_channels" class="modal-overlay">
     <div class="modal-container modal-channels-container" onclick="event.stopPropagation();">
@@ -516,15 +615,15 @@ sort($allEmailsFound);
                         <div class="modal-dest-row">
                             <div class="dest-info-col">
                                 <strong><?=notif_h($email)?></strong>
-                                <div class="dest-lang-row" style="margin-top: 6px;">
+                                <div class="dest-lang-row">
                                     <small class="dest-help-text"><?= __('lbl_recipient_lang', 'Langue :') ?></small>
-                                    <select name="channels[<?=notif_h($email)?>][lang]" class="input-full-width" style="margin-top: 2px;">
+                                    <select name="channels[<?=notif_h($email)?>][lang]">
                                         <?php foreach (['fr' => 'Français 🇫🇷', 'en' => 'English 🇬🇧', 'de' => 'Deutsch 🇩🇪', 'es' => 'Español 🇪🇸', 'it' => 'Italiano 🇮🇹', 'nl' => 'Nederlands 🇳🇱', 'pt' => 'Português 🇵🇹'] as $code => $label): ?>
                                             <option value="<?=notif_h($code)?>" <?=($currentLangRcpt === $code ? 'selected' : '')?>><?=notif_h($label)?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div id="key_box_<?=$idx?>" class="key-input-container" style="display: <?=$isPush ? 'flex' : 'none'?>; flex-direction: column; gap: 6px; margin-top: 8px;">
+                                <div id="key_box_<?=$idx?>" class="key-input-container<?=$isPush ? ' visible' : ''?>">
                                     <div>
                                         <small class="dest-help-text"><?= __('lbl_pushsafer_key', 'Clé privée Pushsafer :') ?></small>
                                         <input type="text" name="channels[<?=notif_h($email)?>][push_key]" value="<?=notif_h($currentKey)?>" placeholder="Ex: a1b2c3d4e5f6..." class="input-full-width">
@@ -550,7 +649,47 @@ sort($allEmailsFound);
         </form>
     </div>
 </div>
+<div id="modal_server_settings" class="modal-overlay">
+    <div class="modal-container" onclick="event.stopPropagation();">
+        <form method="POST" action="mailing.php">
+            <input type="hidden" name="global_settings" value="1">
+            <div class="modal-header">
+                <h2><?= __('modal_server_settings_title', 'Paramètres des rappels d\'alertes') ?></h2>
+                <button type="button" class="btn btn-gray" onclick="closeModal('modal_server_settings')"><?= __('btn_close', 'Fermer') ?></button>
+            </div>
+            <div class="reminder-settings-list">
+                <div class="reminder-row">
+                    <label>🖥️ <?= __('tab_servers', 'Serveurs') ?> :</label>
+		    <div class="reminder-input-group">
+			<input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
+                </div></div>
+                <div class="reminder-row">
+                    <label>🔀 <?= __('tab_switches', 'Switchs') ?> :</label>
+                    <div class="reminder-input-group"> 
+                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
+                </div></div>
+                <div class="reminder-row">
+                    <label>📡 <?= __('tab_aps', 'Bornes Wi-Fi') ?> :</label>
+                    <div class="reminder-input-group"> 
+                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
+                </div></div>
+                <div class="reminder-row">
+                    <label>⚙️ <?= __('tab_others', 'Autres') ?> :</label>
+                    <div class="reminder-input-group"> 
+                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
+                </div></div>
+                <div class="reminder-row">
+                    <label>📋 AS400 (Syslog) :</label>
+                    <div class="reminder-input-group"> 
+                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
+                </div></div>
+            </div>
+            <div class="modal-footer"><button type="submit" class="btn btn-blue"><?= __('btn_save', 'Enregistrer') ?></button></div>
+        </form>
+    </div>
+</div>
 <script src="/assets/darkmode.js"></script>
+<script>const MAILING_I18N={resultsSuffix:<?=json_encode(__('lbl_results_suffix','résultat(s)'))?>,errorToggleGlobal:<?=json_encode(__('err_toggle_global_failed','Erreur lors de la mise à jour du statut global.'))?>};</script>
 <script src="/assets/js/mailing.js"></script>
 </body>
 </html>

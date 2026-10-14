@@ -9,11 +9,9 @@ date_default_timezone_set('Europe/Brussels');
 $historyDir = '/opt/supervision/history';
 $csvFile = $historyDir . '/alerts.csv';
 $activeFile = $historyDir . '/active_alerts.json';
-
 function h(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
-
 function parseDateValue(string $value): ?DateTimeImmutable {
     if ($value === '') {
         return null;
@@ -24,7 +22,13 @@ function parseDateValue(string $value): ?DateTimeImmutable {
         return null;
     }
 }
-
+function formatDateDisplay(string $value): string {
+    $dt = parseDateValue($value);
+    if (!$dt) {
+        return $value;
+    }
+    return strlen($value) > 10 ? $dt->format('d-m-Y H:i:s') : $dt->format('d-m-Y');
+}
 function durationFromDates(string $start, string $end): string {
     $a = parseDateValue($start);
     $b = parseDateValue($end);
@@ -300,6 +304,7 @@ $currentDirLabel = ($dir === 'asc')
     <div class="header-buttons">
         <a href="dashboard.php" class="btn btn-gray"><?= __('btn_back_home', 'Retour à l\'accueil') ?></a>
         <a href="mailing.php" class="btn btn-blue">✉️</a>
+        <a href="syslog.php" class="btn btn-green"><?= __('btn_as400', 'SYSLOG') ?></a>
         <button id="toggleDarkMode" class="btn btn-gray"><?= __('btn_dark_mode', 'Mode 🌙') ?></button>
         <a href="logout.php" class="btn btn-red"><?= __('btn_logout', 'Se déconnecter') ?></a>
     </div>
@@ -381,12 +386,12 @@ $currentDirLabel = ($dir === 'asc')
             <?php else: ?>
                 <?php foreach ($filtered as $row): ?>
                     <tr>
-                        <td class="history-nowrap"><?= h((string)($row['debut'] ?? '')) ?></td>
+			<td class="history-nowrap"><?= h(formatDateDisplay((string)($row['debut'] ?? ''))) ?></td>
                         <td class="history-nowrap">
                             <?php if (!empty($row['_active'])): ?>
                                 <span class="history-active"><?= __('lbl_status_ongoing_badge', 'EN COURS') ?></span>
                             <?php else: ?>
-                                <?= h((string)($row['fin'] ?? '')) ?>
+                                <?= h(formatDateDisplay((string)($row['fin'] ?? ''))) ?>
                             <?php endif; ?>
                         </td>
                         <td class="history-nowrap"><?= h((string)($row['duree'] ?? '')) ?></td>

@@ -5,543 +5,354 @@ $netConfigFile = '/opt/supervision/data/network_alert_config.json';
 $serversFile = '/opt/supervision/data/servers.json';
 $stateFile = '/opt/supervision/data/last_state.json';
 $channelsFile = '/opt/supervision/data/notification_channels.json';
-$networkFiles = [
-    'switchs' => '/opt/supervision/data/network_switchs.json',
-    'aps' => '/opt/supervision/data/network_aps.json',
-    'others' => '/opt/supervision/data/network_others.json'
-];
+$i18nFile = __DIR__ . '/i18n.php';
+$networkFiles = ['switchs' => '/opt/supervision/data/network_switchs.json', 'aps' => '/opt/supervision/data/network_aps.json', 'others' => '/opt/supervision/data/network_others.json'];
+$i18n = file_exists($i18nFile) ? require $i18nFile : ['titles' => [], 'subjects' => [], 'messages' => []];
 $config = json_decode(@file_get_contents($configFile), true) ?: [];
 $netConfig = json_decode(@file_get_contents($netConfigFile), true) ?: [];
 $rawServers = json_decode(@file_get_contents($serversFile), true) ?: [];
 $servers = isset($rawServers['servers']) && is_array($rawServers['servers']) ? $rawServers['servers'] : (is_array($rawServers) ? $rawServers : []);
 $lastState = json_decode(@file_get_contents($stateFile), true) ?: [];
 $userChannels = json_decode(@file_get_contents($channelsFile), true) ?: [];
-$newState = [
-    'ping' => [], 'obsolete' => [], 'disks' => [], 'uptime' => [],
-    'reboot' => [], 'services' => [], 'network' => [],
-    'pending' => $lastState['pending'] ?? []
-];
+$newState = ['ping' => [], 'obsolete' => [], 'disks' => [], 'uptime' => [], 'reboot' => [], 'services' => [], 'network' => [], 'pending' => $lastState['pending'] ?? [], 'last_sent' => $lastState['last_sent'] ?? []];
 $individualQueues = [];
 $logFile = '/var/log/supervision/mailing.log';
-function writeLog($message) {
-    global $logFile;
-    file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL, FILE_APPEND | LOCK_EX);
-}
-function isWithinTimeRange($startStr, $endStr) {
-    if (!$startStr || !$endStr) return true;
-    $now = new DateTime();
-    $start = DateTime::createFromFormat('H:i', $startStr);
-    $end = DateTime::createFromFormat('H:i', $endStr);
-    if (!$start || !$end) return true;
+function writeLog($message) { global $logFile; file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL, FILE_APPEND); }
+function isWithinTimeRange($start, $end) {
+    if (empty($start) || empty($end)) return true;
+    $now = date('H:i');
     return ($start <= $end) ? ($now >= $start && $now <= $end) : ($now >= $start || $now <= $end);
 }
-function normalizeRecipients($recipients) {
-    if (!is_array($recipients)) $recipients = array_map('trim', explode(',', (string)$recipients));
-    $normalized = [];
+function shouldSendServerAlert($alertKey, $cfgInterval, &$newState) {
+    $interval = (int)$cfgInterval;
+    $now = time();
+    $last = $newState['last_sent'][$alertKey] ?? 0;
+    if ($last === 0) { $newState['last_sent'][$alertKey] = $now; return true; }
+    if ($interval > 0 && ($now - $last) >= ($interval * 60)) { $newState['last_sent'][$alertKey] = $now; return true; }
+    return false;
+}
+function clearServerAlertKey($alertKey, &$newState) { unset($newState['last_sent'][$alertKey]); }
+function getRecipientLang($recipient, $channels) {
+    $r = trim(strtolower((string)$recipient));
+    if (isset($channels[$r]['lang']) && !empty($channels[$r]['lang'])) return (string)$channels[$r]['lang'];
+    foreach ($channels as $key => $data) { if (trim(strtolower((string)$key)) === $r) return (string)($data['lang'] ?? 'fr'); }
+    return 'fr';
+}
+function getNotificationChannel($recipient, $channels) {
+    $r = trim(strtolower((string)$recipient));
+    $entry = $channels[$r] ?? null;
+    if (!$entry) { foreach ($channels as $key => $data) { if (trim(strtolower((string)$key)) === $r) { $entry = $data; break; } } }
+    $t = $entry['channel'] ?? $entry['type'] ?? 'mail';
+    return ($t === 'email') ? 'mail' : (string)$t;
+}
+function getPushKey($recipient, $channels) {
+    $r = trim(strtolower((string)$recipient));
+    if (isset($channels[$r]['push_key'])) return (string)$channels[$r]['push_key'];
+    foreach ($channels as $key => $data) { if (trim(strtolower((string)$key)) === $r) return (string)($data['push_key'] ?? ''); }
+    return '';
+}
+function getPushDevice($recipient, $channels) {
+    $r = trim(strtolower((string)$recipient));
+    if (isset($channels[$r]['push_device'])) return (string)$channels[$r]['push_device'];
+    foreach ($channels as $key => $data) { if (trim(strtolower((string)$key)) === $r) return (string)($data['push_device'] ?? ''); }
+    return '';
+}
+function getAlertMessage($type, $params, $lang = 'fr') {
+    global $i18n;
+    $ts = date('Y-m-d H:i:s');
+    $d = $i18n['messages'][$lang] ?? $i18n['messages']['fr'];
+    switch ($type) {
+        case 'ping_down': return "{$d['ping_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['state']} : {$d['unreachable']}\n{$d['losses']} : {$params['losses']}\n{$d['threshold']} : {$params['maxLoss']}\n{$d['ts']} : {$ts}";
+        case 'ping_up': return "{$d['ping_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['state']} : {$d['ping_up_state']}\n{$d['ts']} : {$ts}";
+        case 'obs_down': return "{$d['obs_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['state']} : {$d['unreachable']}\n{$d['obs_down_detail']}\n{$d['ts']} : {$ts}";
+        case 'obs_up': return "{$d['obs_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['ts']} : {$ts}";
+        case 'disk_down': return "{$d['disk_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['disk_lbl']} : {$params['disk']}\n{$d['disk_use']} : {$params['pct']}%\n{$d['threshold']} : {$params['crit']}%\n{$d['ts']} : {$ts}";
+        case 'disk_up': return "{$d['disk_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['disk_lbl']} : {$params['disk']}\n{$d['disk_use']} : {$params['pct']}%\n{$d['threshold']} : {$params['crit']}%\n{$d['ts']} : {$ts}";
+        case 'upt_down': return "{$d['upt_down_title']}\n{$d['equip']} : {$params['name']}\nUptime : {$params['uptime']} {$d['upt_days']}\n{$d['threshold']} : {$params['crit']} {$d['upt_days']}\n{$d['ts']} : {$ts}";
+        case 'upt_up': return "{$d['upt_up_title']}\n{$d['equip']} : {$params['name']}\nUptime : {$params['uptime']} {$d['upt_days']}\n{$d['ts']} : {$ts}";
+        case 'srv_down': return sprintf($d['srv_down_title'], $params['srv'], $params['name']) . "\n{$d['state']} : {$d['unreachable']}\n{$d['ts']} : {$ts}";
+        case 'srv_up': return sprintf($d['srv_up_title'], $params['srv'], $params['name']) . "\n{$d['state']} : {$d['ping_up_state']}\n{$d['ts']} : {$ts}";
+        case 'reb_down': return "{$d['reb_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['reb_reason']}\n{$d['ts']} : {$ts}";
+        case 'reb_up': return "{$d['reb_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['ts']} : {$ts}";
+        case 'net_down': return "{$d['net_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['category']} : {$params['cat']}\n{$d['ip']} : {$params['ip']}\n{$d['state']} : {$d['unreachable']}\n{$d['ts']} : {$ts}";
+        case 'net_up': return "{$d['net_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['category']} : {$params['cat']}\n{$d['ip']} : {$params['ip']}\n{$d['state']} : {$d['ping_up_state']}\n{$d['ts']} : {$ts}";
+        default: return "";
+    }
+}
+function queueAlert($recipients, $type, $params, $userChannels) {
+    global $individualQueues;
+    if (empty($recipients)) return;
     foreach ($recipients as $recipient) {
         $recipient = trim((string)$recipient);
-        if ($recipient !== '') $normalized[] = $recipient;
-    }
-    return array_values(array_unique($normalized));
-}
-function getRecipientLang($recipient, $userChannels) {
-    return $userChannels[$recipient]['lang'] ?? 'fr';
-}
-function getNotificationChannel($recipient, $userChannels) {
-    return (($userChannels[$recipient]['channel'] ?? 'email') === 'push') ? 'push' : 'email';
-}
-function getPushKey($recipient, $userChannels) {
-    return trim((string)($userChannels[$recipient]['push_key'] ?? ''));
-}
-function getPushDevice($recipient, $userChannels) {
-    $device = trim((string)($userChannels[$recipient]['push_device'] ?? ''));
-    return $device !== '' ? $device : 'a';
-}
-function cleanPushMessage($message) {
-    return str_replace(['🔴', '🟢', '🚨', '🕒', '🔄', '⚠️'], '', $message);
-}
-function buildLocalizedMessage(string $type, array $params, string $lang): string {
-    $ts = date('Y-m-d H:i:s');
-    
-    $T = [
-        'fr' => [
-            'equip' => 'Équipement', 'state' => 'État', 'ts' => 'Horodatage', 'threshold' => 'Seuil',
-            'unreachable' => 'INJOIGNABLE (CRITICAL)', 'losses' => 'Pertes consécutives',
-            'ping_down_title' => "🔴 [ALERTE DISPONIBILITÉ] Serveur Hors Ligne",
-            'ping_up_title'   => "🟢 [RETOUR À LA NORMALE] Serveur de nouveau En Ligne",
-            'ping_up_state'   => "ACCESSIBLE (UP)",
-            'obs_down_title'  => "⚠️ [ALERTE DONNÉES OBSOLÈTES] Statut non mis à jour",
-            'obs_down_detail' => "Détail     : Aucune métrique n'a été actualisée récemment.",
-            'obs_up_title'    => "🟢 [RETOUR À LA NORMALE] Synchronisation rétablie",
-            'disk_down_title' => "⚠️ [ALERTE ESPACE DISQUE] Seuil dépassé",
-            'disk_up_title'   => "🟢 [RETOUR À LA NORMALE] Espace Disque",
-            'disk_lbl'        => "Disque", 'disk_use' => 'Utilisation',
-            'upt_down_title'  => "🕒 [ALERTE UPTIME] Redémarrage recommandé",
-            'upt_up_title'    => "🟢 [RETOUR À LA NORMALE] Uptime réinitialisé",
-            'upt_days'        => "jours",
-            'srv_down_title'  => "🚨 [ALERTE SERVICE] %s ne fonctionne pas sur %s",
-            'srv_up_title'    => "🟢 [RETOUR À LA NORMALE] %s fonctionne de nouveau sur %s",
-            'reb_down_title'  => "🔄 [ALERTE REDÉMARRAGE] Reboot requis",
-            'reb_reason'      => "Raison     : Mises à jour système nécessitant un redémarrage.",
-            'reb_up_title'    => "🟢 [RETOUR À LA NORMALE] Redémarrage effectué",
-            'net_down_title'  => "🔴 [ALERTE ÉQUIPEMENT RÉSEAU] Équipement Injoignable",
-            'net_up_title'    => "🟢 [RETOUR À LA NORMALE RÉSEAU] Équipement de nouveau Joignable",
-            'category'        => "Catégorie", 'ip' => "Adresse IP", 'not_specified' => "Non spécifiée"
-        ],
-        'en' => [
-            'equip' => 'Device', 'state' => 'State', 'ts' => 'Timestamp', 'threshold' => 'Threshold',
-            'unreachable' => 'UNREACHABLE (CRITICAL)', 'losses' => 'Consecutive losses',
-            'ping_down_title' => "🔴 [AVAILABILITY ALERT] Server Offline",
-            'ping_up_title'   => "🟢 [RECOVERY] Server Online again",
-            'ping_up_state'   => "REACHABLE (UP)",
-            'obs_down_title'  => "⚠️ [OUTDATED DATA ALERT] Status not updated",
-            'obs_down_detail' => "Detail     : No metrics were updated recently.",
-            'obs_up_title'    => "🟢 [RECOVERY] Synchronization restored",
-            'disk_down_title' => "⚠️ [DISK SPACE ALERT] Threshold exceeded",
-            'disk_up_title'   => "🟢 [RECOVERY] Disk Space normalized",
-            'disk_lbl'        => "Disk", 'disk_use' => 'Usage',
-            'upt_down_title'  => "🕒 [UPTIME ALERT] Reboot recommended",
-            'upt_up_title'    => "🟢 [RECOVERY] Uptime reset",
-            'upt_days'        => "days",
-            'srv_down_title'  => "🚨 [SERVICE ALERT] %s is not running on %s",
-            'srv_up_title'    => "🟢 [RECOVERY] %s is running again on %s",
-            'reb_down_title'  => "🔄 [REBOOT ALERT] Reboot required",
-            'reb_reason'      => "Reason     : System updates requiring a reboot.",
-            'reb_up_title'    => "🟢 [RECOVERY] Reboot completed",
-            'net_down_title'  => "🔴 [NETWORK DEVICE ALERT] Device Unreachable",
-            'net_up_title'    => "🟢 [NETWORK RECOVERY] Device Reachable again",
-            'category'        => "Category", 'ip' => "IP Address", 'not_specified' => "Not specified"
-        ],
-        'nl' => [
-            'equip' => 'Apparaat', 'state' => 'Status', 'ts' => 'Tijdstip', 'threshold' => 'Drempelwaarde',
-            'unreachable' => 'ONBEREIKBAAR (CRITICAL)', 'losses' => 'Opeenvolgende verliezen',
-            'ping_down_title' => "🔴 [BESCHIKBAARHEIDSWAARSCHUWING] Server Offline",
-            'ping_up_title'   => "🟢 [HERSTEL] Server weer Online",
-            'ping_up_state'   => "BEREIKBAAR (UP)",
-            'obs_down_title'  => "⚠️ [VEROUDERDE GEGEVENS] Status niet bijgewerkt",
-            'obs_down_detail' => "Detail     : Er zijn onlangs geen meetwaarden bijgewerkt.",
-            'obs_up_title'    => "🟢 [HERSTEL] Synchronisatie hersteld",
-            'disk_down_title' => "⚠️ [SCHIJFRUIMTE WAARSCHUWING] Drempel overschreden",
-            'disk_up_title'   => "🟢 [HERSTEL] Schijfruimte genormaliseerd",
-            'disk_lbl'        => "Schijf", 'disk_use' => 'Gebruik',
-            'upt_down_title'  => "🕒 [UPTIME WAARSCHUWING] Herstart aanbevolen",
-            'upt_up_title'    => "🟢 [HERSTEL] Uptime gereset",
-            'upt_days'        => "dagen",
-            'srv_down_title'  => "🚨 [SERVICE WAARSCHUWING] %s werkt niet op %s",
-            'srv_up_title'    => "🟢 [HERSTEL] %s werkt weer op %s",
-            'reb_down_title'  => "🔄 [HERSTART WAARSCHUWING] Herstart vereist",
-            'reb_reason'      => "Reden      : Systeemupdates vereisen een herstart.",
-            'reb_up_title'    => "🟢 [HERSTEL] Herstart voltooid",
-            'net_down_title'  => "🔴 [NETWERKAPPARAAT WAARSCHUWING] Apparaat Onbereikbaar",
-            'net_up_title'    => "🟢 [NETWERKHERSTEL] Apparaat weer Bereikbaar",
-            'category'        => "Categorie", 'ip' => "IP-adres", 'not_specified' => "Niet gespecificeerd"
-        ],
-        'de' => [
-            'equip' => 'Gerät', 'state' => 'Status', 'ts' => 'Zeitstempel', 'threshold' => 'Schwellenwert',
-            'unreachable' => 'NICHT ERREICHBAR (CRITICAL)', 'losses' => 'Aufeinanderfolgende Verluste',
-            'ping_down_title' => "🔴 [VERFÜGBARKEITSWARNUNG] Server Offline",
-            'ping_up_title'   => "🟢 [WIEDERHERSTELLUNG] Server wieder Online",
-            'ping_up_state'   => "ERREICHBAR (UP)",
-            'obs_down_title'  => "⚠️ [VERALTETE DATEN] Status nicht aktualisiert",
-            'obs_down_detail' => "Detail     : Kürzlich wurden keine Metriken aktualisiert.",
-            'obs_up_title'    => "🟢 [WIEDERHERSTELLUNG] Synchronisierung wiederhergestellt",
-            'disk_down_title' => "⚠️ [FESTPLATTENWARNUNG] Schwellenwert überschritten",
-            'disk_up_title'   => "🟢 [WIEDERHERSTELLUNG] Festplattenspeicher normalisiert",
-            'disk_lbl'        => "Festplatte", 'disk_use' => 'Auslastung',
-            'upt_down_title'  => "🕒 [UPTIME WARNUNG] Neustart empfohlen",
-            'upt_up_title'    => "🟢 [WIEDERHERSTELLUNG] Uptime zurückgesetzt",
-            'upt_days'        => "Tage",
-            'srv_down_title'  => "🚨 [DIENSTWARNUNG] %s funktioniert nicht auf %s",
-            'srv_up_title'    => "🟢 [WIEDERHERSTELLUNG] %s funktioniert wieder auf %s",
-            'reb_down_title'  => "🔄 [NEUSTARTWARNUNG] Neustart erforderlich",
-            'reb_reason'      => "Grund      : Systemaktualisierungen erfordern einen Neustart.",
-            'reb_up_title'    => "🟢 [WIEDERHERSTELLUNG] Neustart durchgeführt",
-            'net_down_title'  => "🔴 [NETZWERKGERÄTEWARNUNG] Gerät nicht erreichbar",
-            'net_up_title'    => "🟢 [NETZWERK WIEDERHERSTELLUNG] Gerät wieder erreichbar",
-            'category'        => "Kategorie", 'ip' => "IP-Adresse", 'not_specified' => "Nicht angegeben"
-        ],
-        'es' => [
-            'equip' => 'Dispositivo', 'state' => 'Estado', 'ts' => 'Marca de tiempo', 'threshold' => 'Umbral',
-            'unreachable' => 'INACCESIBLE (CRITICAL)', 'losses' => 'Pérdidas consecutivas',
-            'ping_down_title' => "🔴 [ALERTA DE DISPONIBILIDAD] Servidor fuera de línea",
-            'ping_up_title'   => "🟢 [RECUPERACIÓN] Servidor en línea de nuevo",
-            'ping_up_state'   => "ACCESIBLE (UP)",
-            'obs_down_title'  => "⚠️ [DATOS OBSOLETOS] Estado no actualizado",
-            'obs_down_detail' => "Detalle    : No se actualizaron métricas recientemente.",
-            'obs_up_title'    => "🟢 [RECUPERACIÓN] Sincronización restablecida",
-            'disk_down_title' => "⚠️ [ALERTA DE DISCO] Umbral superado",
-            'disk_up_title'   => "🟢 [RECUPERACIÓN] Espacio en disco normalizado",
-            'disk_lbl'        => "Disco", 'disk_use' => 'Uso',
-            'upt_down_title'  => "🕒 [ALERTA DE UPTIME] Se recomienda reiniciar",
-            'upt_up_title'    => "🟢 [RECUPERACIÓN] Uptime reiniciado",
-            'upt_days'        => "días",
-            'srv_down_title'  => "🚨 [ALERTA DE SERVICIO] %s no funciona en %s",
-            'srv_up_title'    => "🟢 [RECUPERACIÓN] %s vuelve a funcionar en %s",
-            'reb_down_title'  => "🔄 [ALERTA DE REINICIO] Reinicio necesario",
-            'reb_reason'      => "Razón      : Actualizaciones del sistema que requieren reinicio.",
-            'reb_up_title'    => "🟢 [RECUPERACIÓN] Reinicio completado",
-            'net_down_title'  => "🔴 [ALERTA DE RED] Dispositivo inaccesible",
-            'net_up_title'    => "🟢 [RECUPERACIÓN DE RED] Dispositivo accesible de nuevo",
-            'category'        => "Categoría", 'ip' => "Dirección IP", 'not_specified' => "No especificada"
-        ],
-        'pt' => [
-            'equip' => 'Dispositivo', 'state' => 'Estado', 'ts' => 'Carimbo de data/hora', 'threshold' => 'Limite',
-            'unreachable' => 'INACESSÍVEL (CRITICAL)', 'losses' => 'Perdas consecutivas',
-            'ping_down_title' => "🔴 [ALERTA DE DISPONIBILIDADE] Servidor Offline",
-            'ping_up_title'   => "🟢 [RECUPERAÇÃO] Servidor Online novamente",
-            'ping_up_state'   => "ACESSÍVEL (UP)",
-            'obs_down_title'  => "⚠️ [DADOS OBSOLETOS] Estado não atualizado",
-            'obs_down_detail' => "Detalhe    : Nenhuma métrica foi atualizada recentemente.",
-            'obs_up_title'    => "🟢 [RECUPERAÇÃO] Sincronização restabelecida",
-            'disk_down_title' => "⚠️ [ALERTA DE DISCO] Limite excedido",
-            'disk_up_title'   => "🟢 [RECUPERAÇÃO] Espaço em disco normalizado",
-            'disk_lbl'        => "Disco", 'disk_use' => 'Utilização',
-            'upt_down_title'  => "🕒 [ALERTA DE UPTIME] Reinicialização recomendada",
-            'upt_up_title'    => "🟢 [RECUPERAÇÃO] Uptime reiniciado",
-            'upt_days'        => "dias",
-            'srv_down_title'  => "🚨 [ALERTA DE SERVIÇO] %s não está a funcionar em %s",
-            'srv_up_title'    => "🟢 [RECUPERAÇÃO] %s voltou a funcionar em %s",
-            'reb_down_title'  => "🔄 [ALERTA DE REINICIALIZAÇÃO] Reinicialização necessária",
-            'reb_reason'      => "Razão      : Atualizações do sistema que requerem reinicialização.",
-            'reb_up_title'    => "🟢 [RECUPERAÇÃO] Reinicialização concluída",
-            'net_down_title'  => "🔴 [ALERTA DE REDE] Dispositivo inacessível",
-            'net_up_title'    => "🟢 [RECUPERAÇÃO DE REDE] Dispositivo acessível novamente",
-            'category'        => "Categoria", 'ip' => "Endereço IP", 'not_specified' => "Não especificado"
-        ],
-        'it' => [
-            'equip' => 'Dispositivo', 'state' => 'Stato', 'ts' => 'Data e ora', 'threshold' => 'Soglia',
-            'unreachable' => 'RAGGIUNGIBILE (CRITICAL)', 'losses' => 'Perdite consecutive',
-            'ping_down_title' => "🔴 [ALLERTA DISPONIBILITÀ] Server Offline",
-            'ping_up_title'   => "🟢 [RIPRISTINO] Server di nuovo Online",
-            'ping_up_state'   => "RAGGIUNGIBILE (UP)",
-            'obs_down_title'  => "⚠️ [DATI OBSOLETI] Stato non aggiornato",
-            'obs_down_detail' => "Dettaglio  : Nessuna metrica aggiornata di recente.",
-            'obs_up_title'    => "🟢 [RIPRISTINO] Sincronizzazione ripristinata",
-            'disk_down_title' => "⚠️ [ALLERTA DISCO] Soglia superata",
-            'disk_up_title'   => "🟢 [RIPRISTINO] Spazio disco normalizzato",
-            'disk_lbl'        => "Disco", 'disk_use' => 'Utilizzo',
-            'upt_down_title'  => "🕒 [ALLERTA UPTIME] Riavvio consigliato",
-            'upt_up_title'    => "🟢 [RIPRISTINO] Uptime reimpostato",
-            'upt_days'        => "giorni",
-            'srv_down_title'  => "🚨 [ALLERTA SERVIZIO] %s non funziona su %s",
-            'srv_up_title'    => "🟢 [RIPRISTINO] %s funziona di nuovo su %s",
-            'reb_down_title'  => "🔄 [ALLERTA RIAVVIO] Riavvio richiesto",
-            'reb_reason'      => "Motivo     : Aggiornamenti di sistema che richiedono il riavvio.",
-            'reb_up_title'    => "🟢 [RIPRISTINO] Riavvio completato",
-            'net_down_title'  => "🔴 [ALLERTA RETE] Dispositivo non raggiungibile",
-            'net_up_title'    => "🟢 [RIPRISTINO RETE] Dispositivo di nuovo raggiungibile",
-            'category'        => "Categoria", 'ip' => "Indirizzo IP", 'not_specified' => "Non specificato"
-        ]
-    ];
-    $d = $T[$lang] ?? $T['fr'];
-    switch ($type) {
-        case 'ping_down':
-            return "{$d['ping_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['state']}       : {$d['unreachable']}\n{$d['losses']} : {$params['losses']}\n{$d['threshold']}      : {$params['maxLoss']}\n{$d['ts']} : {$ts}";
-        case 'ping_up':
-            return "{$d['ping_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['state']}       : {$d['ping_up_state']}\n{$d['ts']} : {$ts}";
-        case 'obsolete_down':
-            return "{$d['obs_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['obs_down_detail']}\n{$d['ts']} : {$ts}";
-        case 'obsolete_up':
-            return "{$d['obs_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['ts']} : {$ts}";
-        case 'disk_down':
-            return "{$d['disk_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['disk_lbl']}     : {$params['disk']}\n{$d['disk_use']}: {$params['used']}%\n{$d['ts']} : {$ts}";
-        case 'disk_up':
-            return "{$d['disk_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['disk_lbl']}     : {$params['disk']}\n{$d['disk_use']}: {$params['used']}%\n{$d['ts']} : {$ts}";
-        case 'uptime_down':
-            return "{$d['upt_down_title']}\n{$d['equip']} : {$params['name']}\nUptime     : {$params['days']} {$d['upt_days']}\n{$d['ts']} : {$ts}";
-        case 'uptime_up':
-            return "{$d['upt_up_title']}\n{$d['equip']} : {$params['name']}\nUptime     : {$params['days']} {$d['upt_days']}\n{$d['ts']} : {$ts}";
-        case 'service_down':
-            $t = sprintf($d['srv_down_title'], $params['label'], $params['name']);
-            return "{$t}\n{$d['ts']} : {$ts}";
-        case 'service_up':
-            $t = sprintf($d['srv_up_title'], $params['label'], $params['name']);
-            return "{$t}\n{$d['ts']} : {$ts}";
-        case 'reboot_down':
-            return "{$d['reb_down_title']}\n{$d['equip']} : {$params['name']}\n{$d['reb_reason']}\n{$d['ts']} : {$ts}";
-        case 'reboot_up':
-            return "{$d['reb_up_title']}\n{$d['equip']} : {$params['name']}\n{$d['ts']} : {$ts}";
-        case 'network_down':
-            return "{$d['net_down_title']}\n{$d['category']}  : " . strtoupper($params['cat']) . "\n{$d['equip']} : {$params['name']}\n{$d['ip']} : " . ($params['ip'] ?: $d['not_specified']) . "\n{$d['state']}       : DOWN\n{$d['losses']}     : {$params['losses']}\n{$d['threshold']}      : {$params['maxLoss']}\n{$d['ts']} : {$ts}";
-        case 'network_up':
-            return "{$d['net_up_title']}\n{$d['category']}  : " . strtoupper($params['cat']) . "\n{$d['equip']} : {$params['name']}\n{$d['ip']} : " . ($params['ip'] ?: $d['not_specified']) . "\n{$d['state']}       : UP\n{$d['ts']} : {$ts}";
-    }
-    return "";
-}
-
-function queueEvent(&$queues, $recipients, $userChannels, $type, $params) {
-    foreach (normalizeRecipients($recipients) as $recipient) {
+        if ($recipient === '') continue;
         $lang = getRecipientLang($recipient, $userChannels);
-        $msg = buildLocalizedMessage($type, $params, $lang);
-        if (!isset($queues[$recipient])) $queues[$recipient] = '';
-        $queues[$recipient] .= $msg . "\n----------------------------------------\n\n";
-    }
-}
-
-function notifyStateChange(&$queues, &$newState, $statePath, $currentState, $previousState, $inTime, $recipients, $userChannels, $alertType, $recoveryType, $params) {
-    $parts = explode('.', $statePath);
-    $pending = &$newState['pending'];
-    $pendingValue = $pending;
-    foreach ($parts as $part) {
-        if (!is_array($pendingValue) || !array_key_exists($part, $pendingValue)) {
-            $pendingValue = null;
-            break;
+        $msg = getAlertMessage($type, $params, $lang);
+        if (!empty($msg)) {
+            if (!isset($individualQueues[$recipient])) $individualQueues[$recipient] = "";
+            $individualQueues[$recipient] .= $msg . "\n\n" . str_repeat("-", 40) . "\n\n";
         }
-        $pendingValue = $pendingValue[$part];
-    }
-    $changed = ($currentState !== $previousState);
-    if ($currentState && $changed && !$inTime) {
-        $ref = &$pending;
-        foreach ($parts as $part) {
-            if (!isset($ref[$part]) || !is_array($ref[$part])) $ref[$part] = [];
-            $ref = &$ref[$part];
-        }
-        $ref = true;
-        return;
-    }
-    if (!$currentState && $pendingValue !== null) {
-        $ref = &$pending;
-        foreach ($parts as $part) {
-            if (!isset($ref[$part]) || !is_array($ref[$part])) {
-                $ref = null;
-                break;
-            }
-            $ref = &$ref[$part];
-        }
-        if (is_array($ref)) unset($ref[$parts[count($parts) - 1]]);
-        return;
-    }
-    if (!$inTime) return;
-    if ($changed || $pendingValue === true) {
-        queueEvent($queues, $recipients, $userChannels, $currentState ? $alertType : $recoveryType, $params);
-        $ref = &$pending;
-        foreach ($parts as $part) {
-            if (!isset($ref[$part]) || !is_array($ref[$part])) {
-                $ref = null;
-                break;
-            }
-            $ref = &$ref[$part];
-        }
-        if (is_array($ref)) unset($ref[$parts[count($parts) - 1]]);
     }
 }
 function sendPushsaferNotification($recipient, $message, $userChannels) {
+    global $i18n;
     $pushKey = getPushKey($recipient, $userChannels);
     $pushDevice = getPushDevice($recipient, $userChannels);
-    if ($pushKey === '') {
-        writeLog("[ERROR] Clé Pushsafer absente pour : {$recipient}");
-        return false;
-    }
+    if ($pushKey === '') { writeLog("[ERROR] Clé Pushsafer absente pour : {$recipient}"); return false; }
     $lang = getRecipientLang($recipient, $userChannels);
-    $titles = [
-        'fr' => "Supervision Neo : Notification / Alerte d'état",
-        'en' => "Neo Supervision: State Notification / Alert",
-        'nl' => "Neo Toezicht: Statusmelding / Waarschuwing",
-        'de' => "Neo Überwachung: Statusbenachrichtigung / Warnung",
-        'es' => "Supervisión Neo: Notificación / Alerta de estado",
-        'pt' => "Supervisão Neo: Notificação / Alerta de estado",
-        'it' => "Supervisione Neo: Notifica / Allerta di stato"
-    ];
-    $title = $titles[$lang] ?? $titles['fr'];
-    $payload = http_build_query([
-        'k' => $pushKey,
-        'd' => $pushDevice,
-        't' => $title,
-        'm' => cleanPushMessage($message)
-    ], '', '&', PHP_QUERY_RFC3986);
-    $context = stream_context_create(['http' => ['method' => 'POST', 'header' => "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: " . strlen($payload) . "\r\n", 'content' => $payload, 'timeout' => 15, 'ignore_errors' => true]]);
-    $response = @file_get_contents('https://www.pushsafer.com/api', false, $context);
-    if ($response === false) {
-        writeLog("[ERROR] Échec HTTP Pushsafer pour : {$recipient}");
-        return false;
-    }
-    $result = json_decode($response, true);
-    if (is_array($result) && isset($result['status'])) {
-        if ((string)$result['status'] === '1' || $result['status'] === 1 || $result['status'] === true) {
-            writeLog("[SUCCESS] Push envoyé à : {$recipient} [Cible: {$pushDevice}]");
-            return true;
-        }
-        $error = $result['error'] ?? $result['message'] ?? 'Réponse Pushsafer en échec';
-        writeLog("[ERROR] Pushsafer pour {$recipient} : " . (string)$error);
-        return false;
-    }
-    writeLog("[ERROR] Réponse Pushsafer invalide pour : {$recipient}");
+    $titles = $i18n['titles'] ?? [];
+    $title = $titles[$lang] ?? "NEO Supervision : Notification / Alerte d'état";
+    $postData = ['k' => $pushKey, 't' => $title, 'm' => trim($message), 's' => '11', 'v' => '3', 'i' => '1'];
+    if (!empty($pushDevice)) $postData['d'] = $pushDevice;
+    $ch = curl_init('https://www.pushsafer.com/api');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query($postData), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+    if ($curlErr) { writeLog("[ERROR] Pushsafer curl error: {$curlErr} pour {$recipient}"); return false; }
+    if ($httpCode !== 200) { writeLog("[ERROR] Pushsafer HTTP {$httpCode}: {$response} pour {$recipient}"); return false; }
+    $res = json_decode($response, true);
+    if (isset($res['status']) && $res['status'] == 1) { writeLog("[SUCCESS] Push envoyé à : {$recipient}"); return true; }
+    writeLog("[ERROR] Pushsafer réponse négative : {$response} pour {$recipient}");
     return false;
 }
-foreach ($servers as $srv) {
-    $name = $srv['name'] ?? null;
-    $sType = strtolower($srv['type'] ?? 'linux');
-    if (!$name) continue;
-    $cfg = $config[$name] ?? null;
-    if (!$cfg || empty($cfg['global_enabled'])) continue;
-    $emails = $cfg['emails'] ?? [];
-    $inTime = isWithinTimeRange($cfg['time_start'] ?? '00:00', $cfg['time_end'] ?? '23:59');
-    $currStatus = 'UP';
-    $oldStatus = $lastState['ping'][$name] ?? 'UP';
-    if (!empty($cfg['offline_enabled'])) {
-        $pingFile = "/opt/supervision/data/{$name}_ping.json";
-        $consecutiveLosses = 0;
-        $maxLoss = max(0, intval($cfg['max_loss'] ?? 1));
-        if (file_exists($pingFile)) {
-            $pData = json_decode(@file_get_contents($pingFile), true) ?: [];
-            $consecutiveLosses = max(0, intval($pData['consecutive_losses'] ?? 0));
-            $currStatus = ($consecutiveLosses > $maxLoss) ? 'DOWN' : 'UP';
-        }
-        notifyStateChange($individualQueues, $newState, "ping.$name", $currStatus === 'DOWN', $oldStatus === 'DOWN', $inTime, $emails, $userChannels, 'ping_down', 'ping_up', [
-            'name' => $name, 'losses' => $consecutiveLosses, 'maxLoss' => $maxLoss
-        ]);
-        $newState['ping'][$name] = $currStatus;
-    }
-    $isObsolete = false;
-    if ($currStatus !== 'DOWN') {
-        $now = time();
-        $checks = ["/opt/supervision/data/{$name}_status.json" => 4500, "/opt/supervision/data/{$name}_disks.json" => 23400, "/opt/supervision/data/{$name}_ram.json" => 1200, "/opt/supervision/data/{$name}_uptime.json" => 900, "/opt/supervision/data/{$name}_services.json" => 1200];
-        foreach ($checks as $filePath => $maxAge) {
-            if (file_exists($filePath) && ($now - filemtime($filePath)) <= $maxAge) {
-                $isObsolete = false;
-                break;
+foreach ($servers as $s) {
+    if (!isset($s['name'])) continue;
+    $name = $s['name'];
+    $pj = json_decode(@file_get_contents("/opt/supervision/data/{$name}_ping.json"), true) ?: [];
+    $stj = json_decode(@file_get_contents("/opt/supervision/data/{$name}_status.json"), true) ?: [];
+    $svj = json_decode(@file_get_contents("/opt/supervision/data/{$name}_services.json"), true) ?: [];
+    $s['ping_loss'] = $pj['consecutive_losses'] ?? (($pj['status'] ?? '') === 'offline' ? 100 : 0);
+    $s['services'] = $svj['services'] ?? [];
+    $s['reboot_required'] = $stj['status']['reboot_required'] ?? false;
+    $sCfg = $config['servers'][$name] ?? $config[$name] ?? [];
+    $isGloballyEnabled = !empty($sCfg['enabled']) || !empty($sCfg['offline_enabled']);
+    if (!$isGloballyEnabled) continue;
+    if (!isWithinTimeRange($sCfg['time_start'] ?? '', $sCfg['time_end'] ?? '')) continue;
+    $emails = $sCfg['emails'] ?? [];
+    $remindInterval = isset($sCfg['interval']) && $sCfg['interval'] !== '' 
+        ? (int)$sCfg['interval'] 
+        : (int)($config['reminder_interval'] ?? 0);
+    if (!empty($sCfg['offline_enabled'])) {
+        $loss = $s['ping_loss'] ?? 0;
+        $critLoss = $sCfg['ping']['crit'] ?? $sCfg['max_loss'] ?? 100;
+        if ($loss >= $critLoss) {
+            $newState['ping'][$name] = true;
+            if (shouldSendServerAlert("ping:{$name}", $remindInterval, $newState)) {
+                queueAlert($emails, 'ping_down', ['name' => $name, 'losses' => $loss, 'maxLoss' => $critLoss], $userChannels);
             }
-            $isObsolete = true;
-        }
-    }
-    $wasObsolete = $lastState['obsolete'][$name] ?? false;
-    notifyStateChange($individualQueues, $newState, "obsolete.$name", $isObsolete, $wasObsolete, $inTime, $emails, $userChannels, 'obsolete_down', 'obsolete_up', [
-        'name' => $name
-    ]);
-    $newState['obsolete'][$name] = $isObsolete;
-    if (!empty($cfg['disks']) && is_array($cfg['disks'])) {
-        $diskFile = "/opt/supervision/data/{$name}_disks.json";
-        if (file_exists($diskFile)) {
-            $diskData = json_decode(@file_get_contents($diskFile), true);
-            $latestDisks = $diskData[0]['disks'] ?? [];
-            foreach ($cfg['disks'] as $diskName => $dConf) {
-                $warnEnabled = !empty($dConf['warn_enabled']);
-                $critEnabled = !empty($dConf['crit_enabled']);
-                if (!$warnEnabled && !$critEnabled) continue;
-                $warnThreshold = (int)($dConf['warn_threshold'] ?? 80);
-                $critThreshold = (int)($dConf['crit_threshold'] ?? 90);
-                $usedPercent = isset($latestDisks[$diskName]['used_percent']) ? (int)str_replace('%', '', $latestDisks[$diskName]['used_percent']) : 0;
-                $isDiskAlert = ($critEnabled && $usedPercent >= $critThreshold) || ($warnEnabled && $usedPercent >= $warnThreshold);
-                $wasDiskAlert = $lastState['disks'][$name][$diskName] ?? false;
-                notifyStateChange($individualQueues, $newState, "disks.$name.$diskName", $isDiskAlert, $wasDiskAlert, $inTime, $emails, $userChannels, 'disk_down', 'disk_up', [
-                    'name' => $name, 'disk' => $diskName, 'used' => $usedPercent
-                ]);
-                $newState['disks'][$name][$diskName] = $isDiskAlert;
+        } else {
+            if (!empty($lastState['ping'][$name])) {
+                clearServerAlertKey("ping:{$name}", $newState);
+                queueAlert($emails, 'ping_up', ['name' => $name], $userChannels);
             }
         }
     }
-    if (!empty($cfg['uptime_enabled'])) {
-        $uptFile = "/opt/supervision/data/{$name}_uptime.json";
-        if (file_exists($uptFile)) {
-            $uData = json_decode(@file_get_contents($uptFile), true) ?: [];
-            $days = (int)($uData['uptime_days'] ?? 0);
-            $max = (int)($cfg['uptime_threshold'] ?? 30);
-            $isAlert = $days >= $max;
-            $wasAlert = $lastState['uptime'][$name] ?? false;
-            notifyStateChange($individualQueues, $newState, "uptime.$name", $isAlert, $wasAlert, $inTime, $emails, $userChannels, 'uptime_down', 'uptime_up', [
-                'name' => $name, 'days' => $days
-            ]);
-            $newState['uptime'][$name] = $isAlert;
+    $lastUpdate = $s['last_update'] ?? 0;
+    $isObs = ($lastUpdate > 0 && (time() - $lastUpdate) > 600);
+    if (!empty($sCfg['obsolete']['enabled']) && $isObs) {
+        $newState['obsolete'][$name] = true;
+        if (shouldSendServerAlert("obs:{$name}", $remindInterval, $newState)) queueAlert($emails, 'obs_down', ['name' => $name], $userChannels);
+    } else {
+        if (!empty($lastState['obsolete'][$name])) {
+            clearServerAlertKey("obs:{$name}", $newState);
+            queueAlert($emails, 'obs_up', ['name' => $name], $userChannels);
         }
     }
-    $servicesFile = "/opt/supervision/data/{$name}_services.json";
-    if (file_exists($servicesFile)) {
-        $servicesData = json_decode(@file_get_contents($servicesFile), true) ?: [];
-        $srvServices = $servicesData['services'] ?? [];
-        if ($sType === 'windows') {
-            $serviceDefinitions = [];
-            if (!empty($cfg['powerbi_enabled'])) $serviceDefinitions['powerbi'] = ['powerbi_gateway', 'Power BI Gateway'];
-            if (!empty($cfg['wsus_enabled'])) $serviceDefinitions['wsus'] = ['wsus_service', 'WSUS'];
-            if (!empty($cfg['outlook_enabled'])) $serviceDefinitions['outlook'] = ['outlook', 'Outlook'];
-            if (!empty($cfg['stagenow_enabled'])) $serviceDefinitions['stagenow'] = ['stagenow', 'StageNow'];
-            foreach ($serviceDefinitions as $serviceKey => [$serviceName, $label]) {
-                if ($serviceKey === 'wsus') {
-                    $serviceStatus = $srvServices['wsus_service'] ?? 'unknown';
-                    $poolStatus = $srvServices['wsus_apppool'] ?? 'unknown';
-                    $serviceStatus = is_array($serviceStatus) ? ($serviceStatus['status'] ?? 'unknown') : $serviceStatus;
-                    $poolStatus = is_array($poolStatus) ? ($poolStatus['status'] ?? 'unknown') : $poolStatus;
-                    $isAlert = !in_array(strtolower((string)$serviceStatus), ['running', 'active'], true) || !in_array(strtolower((string)$poolStatus), ['running', 'active'], true);
-                } else {
-                    $status = $srvServices[$serviceName] ?? 'unknown';
-                    $status = is_array($status) ? ($status['status'] ?? 'unknown') : $status;
-                    $isAlert = !in_array(strtolower((string)$status), ['running', 'active', 'ok'], true);
-                }
-                $wasAlert = $lastState['services'][$name][$serviceKey] ?? false;
-                notifyStateChange($individualQueues, $newState, "services.$name.$serviceKey", $isAlert, $wasAlert, $inTime, $emails, $userChannels, 'service_down', 'service_up', [
-                    'name' => $name, 'label' => $label
-                ]);
-                $newState['services'][$name][$serviceKey] = $isAlert;
+    $disks = $s['disks'] ?? [];
+    foreach ($disks as $d) {
+        $dName = $d['name'] ?? $d['mount'] ?? '';
+        if ($dName === '') continue;
+        $dCfg = $sCfg['disks'][$dName] ?? [];
+        if (empty($dCfg['enabled'])) continue;
+        $dCrit = $dCfg['crit'] ?? 90;
+        $dPct = $d['use_pct'] ?? $d['used_percent'] ?? 0;
+        $alertKey = "disk:{$name}:{$dName}";
+        if ($dPct >= $dCrit) {
+            $newState['disks'][$name][$dName] = true;
+            if (shouldSendServerAlert($alertKey, $remindInterval, $newState)) queueAlert($emails, 'disk_down', ['name' => $name, 'disk' => $dName, 'pct' => $dPct, 'crit' => $dCrit], $userChannels);
+        } else {
+            if (!empty($lastState['disks'][$name][$dName])) {
+                clearServerAlertKey($alertKey, $newState);
+                queueAlert($emails, 'disk_up', ['name' => $name, 'disk' => $dName, 'pct' => $dPct, 'crit' => $dCrit], $userChannels);
             }
         }
     }
-    if (!empty($cfg['reboot_enabled'])) {
-        $stFile = "/opt/supervision/data/{$name}_status.json";
-        if (file_exists($stFile)) {
-            $sData = json_decode(@file_get_contents($stFile), true) ?: [];
-            $needsReboot = !empty($sData['status']['reboot_required']);
-            $wasReboot = $lastState['reboot'][$name] ?? false;
-            notifyStateChange($individualQueues, $newState, "reboot.$name", $needsReboot, $wasReboot, $inTime, $emails, $userChannels, 'reboot_down', 'reboot_up', [
-                'name' => $name
-            ]);
-            $newState['reboot'][$name] = $needsReboot;
+    $uptimeDays = (int)(($s['uptime'] ?? 0) / 86400);
+    $uptCfg = $sCfg['uptime'] ?? [];
+    if (!empty($uptCfg['enabled'])) {
+        $uCrit = $uptCfg['crit'] ?? 60;
+        $alertKey = "upt:{$name}";
+        if ($uptimeDays >= $uCrit) {
+            $newState['uptime'][$name] = true;
+            if (shouldSendServerAlert($alertKey, $remindInterval, $newState)) queueAlert($emails, 'upt_down', ['name' => $name, 'uptime' => $uptimeDays, 'crit' => $uCrit], $userChannels);
+        } else {
+            if (!empty($lastState['uptime'][$name])) {
+                clearServerAlertKey($alertKey, $newState);
+                queueAlert($emails, 'upt_up', ['name' => $name, 'uptime' => $uptimeDays], $userChannels);
+            }
+        }
+    }
+    $services = $s['services'] ?? [];
+    foreach ($services as $srvName => $srvState) {
+        $srvCfg = $sCfg['services'][$srvName] ?? [];
+        $isSrvEnabled = !empty($srvCfg['enabled']) || (!empty($sCfg['wsus_enabled']) && strpos($srvName, 'wsus') === 0);
+        if (!$isSrvEnabled) continue;
+        $isDown = ($srvState !== 0 && $srvState !== 'running' && $srvState !== 'active');
+        $alertKey = "srv:{$name}:{$srvName}";
+        if ($isDown) {
+            $newState['services'][$name][$srvName] = true;
+            if (shouldSendServerAlert($alertKey, $remindInterval, $newState)) queueAlert($emails, 'srv_down', ['name' => $name, 'srv' => $srvName], $userChannels);
+        } else {
+            if (!empty($lastState['services'][$name][$srvName])) {
+                clearServerAlertKey($alertKey, $newState);
+                queueAlert($emails, 'srv_up', ['name' => $name, 'srv' => $srvName], $userChannels);
+            }
+        }
+    }
+    if (!empty($sCfg['reboot_enabled']) || !empty($sCfg['reboot']['enabled'])) {
+        $needsReboot = !empty($s['reboot_required']);
+        $alertKey = "reb:{$name}";
+        if ($needsReboot) {
+            $newState['reboot'][$name] = true;
+            if (shouldSendServerAlert($alertKey, $remindInterval, $newState)) queueAlert($emails, 'reb_down', ['name' => $name], $userChannels);
+        } else {
+            if (!empty($lastState['reboot'][$name])) {
+                clearServerAlertKey($alertKey, $newState);
+                queueAlert($emails, 'reb_up', ['name' => $name], $userChannels);
+            }
         }
     }
 }
-foreach ($networkFiles as $category => $filePath) {
-    if (!file_exists($filePath)) continue;
-    $netData = json_decode(@file_get_contents($filePath), true) ?: [];
-    $equipments = [];
-    if (isset($netData['sites']) && is_array($netData['sites'])) {
-        foreach ($netData['sites'] as $eqList) foreach ($eqList as $eq) $equipments[] = $eq;
-    } elseif (is_array($netData)) {
-        foreach ($netData as $val) {
-            if (is_array($val) && isset($val[0]['name'])) foreach ($val as $eq) $equipments[] = $eq;
-            elseif (is_array($val) && isset($val['name'])) $equipments[] = $val;
+foreach ($networkFiles as $netType => $nFile) {
+    $rawNet = json_decode(@file_get_contents($nFile), true) ?: [];
+    $netItems = [];
+    if (isset($rawNet['sites']) && is_array($rawNet['sites'])) {
+        foreach ($rawNet['sites'] as $siteItems) {
+            if (is_array($siteItems)) foreach ($siteItems as $it) $netItems[] = $it;
+        }
+    } elseif (is_array($rawNet)) {
+        $netItems = $rawNet;
+    }
+    $remindInterval = (int)($netConfig['reminder_intervals'][$netType] ?? 0);
+    foreach ($netItems as $item) {
+        if (!is_array($item)) continue;
+        $dName = $item['name'] ?? '';
+        if ($dName === '') continue;
+        $dCfg = $netConfig[$netType][$dName] ?? [];
+        $isSnmp = strtolower((string)($item['type'] ?? '')) === 'snmp';
+        $isConfigured = !empty($dCfg['enabled']) || !empty($dCfg['ping_enabled']) || !empty($dCfg['warning_enabled']) || !empty($dCfg['critical_enabled']);
+        if (!$isConfigured || !isWithinTimeRange($dCfg['time_start'] ?? '', $dCfg['time_end'] ?? '')) continue;
+        $emails = $dCfg['emails'] ?? [];
+        $status = strtolower((string)($item['status'] ?? 'down'));
+        $isDown = ($status === 'down' || $status === 'offline' || $status === 'critical');
+        $ip = $item['ip'] ?? '';
+        $alertKey = "net:{$netType}:{$dName}";
+        if ($isDown) {
+            $newState['network'][$netType][$dName] = true;
+            if (shouldSendServerAlert($alertKey, $remindInterval, $newState)) queueAlert($emails, 'net_down', ['name' => $dName, 'cat' => ucfirst($netType), 'ip' => $ip], $userChannels);
+        } elseif (!empty($lastState['network'][$netType][$dName])) {
+            clearServerAlertKey($alertKey, $newState);
+            queueAlert($emails, 'net_up', ['name' => $dName, 'cat' => ucfirst($netType), 'ip' => $ip], $userChannels);
+        }
+        if ($isSnmp && !empty($dCfg['ping_enabled'])) {
+            $pingKey = "net:{$netType}:{$dName}:ping";
+            if ($isDown) {
+                $newState['network'][$netType][$dName . ':ping'] = true;
+                if (shouldSendServerAlert($pingKey, $remindInterval, $newState)) queueAlert($emails, 'net_down', ['name' => $dName, 'cat' => ucfirst($netType) . ' Ping', 'ip' => $ip], $userChannels);
+            } elseif (!empty($lastState['network'][$netType][$dName . ':ping'])) {
+                clearServerAlertKey($pingKey, $newState);
+                queueAlert($emails, 'net_up', ['name' => $dName, 'cat' => ucfirst($netType) . ' Ping', 'ip' => $ip], $userChannels);
+            }
+        }
+        if (!$isSnmp || !is_numeric($item['snmp'] ?? null)) continue;
+        $value = (float)$item['snmp'];
+        $unit = (string)($dCfg['snmp_unit'] ?? '');
+        foreach (['warning' => 'warning_value', 'critical' => 'critical_value'] as $level => $valueKey) {
+            $enabled = !empty($dCfg[$level . '_enabled']);
+            $threshold = (float)($dCfg[$valueKey] ?? 0);
+            $snmpKey = "net:{$netType}:{$dName}:snmp:{$level}";
+            $isAlert = $enabled && $value >= $threshold;
+            if ($isAlert) {
+                $newState['network'][$netType][$dName . ':snmp:' . $level] = true;
+                if (shouldSendServerAlert($snmpKey, $remindInterval, $newState)) {
+                    $message = "[SNMP {$level}] {$dName}\nCatégorie : " . ucfirst($netType) . "\nIP : {$ip}\nValeur : {$value} {$unit}\nSeuil : {$threshold} {$unit}\nDate : " . date('Y-m-d H:i:s');
+                    foreach ((array)$emails as $recipient) {
+                        $recipient = trim((string)$recipient);
+                        if ($recipient !== '') {
+                            if (!isset($individualQueues[$recipient])) $individualQueues[$recipient] = '';
+                            $individualQueues[$recipient] .= $message . "\n\n" . str_repeat("-", 40) . "\n\n";
+                        }
+                    }
+                }
+            } elseif (!empty($lastState['network'][$netType][$dName . ':snmp:' . $level])) {
+                unset($newState['network'][$netType][$dName . ':snmp:' . $level]);
+                clearServerAlertKey($snmpKey, $newState);
+                $message = "[SNMP {$level} OK] {$dName}\nCatégorie : " . ucfirst($netType) . "\nIP : {$ip}\nValeur : {$value} {$unit}\nSeuil : {$threshold} {$unit}\nDate : " . date('Y-m-d H:i:s');
+                foreach ((array)$emails as $recipient) {
+                    $recipient = trim((string)$recipient);
+                    if ($recipient !== '') {
+                        if (!isset($individualQueues[$recipient])) $individualQueues[$recipient] = '';
+                        $individualQueues[$recipient] .= $message . "\n\n" . str_repeat("-", 40) . "\n\n";
+                    }
+                }
+            }
         }
     }
-    foreach ($equipments as $eq) {
-        $name = $eq['name'] ?? null;
-        if (!$name) continue;
-        $cfg = $netConfig[$category][$name] ?? [];
-        $emails = $cfg['emails'] ?? [];
-        $inTime = isWithinTimeRange($cfg['time_start'] ?? '00:00', $cfg['time_end'] ?? '23:59');
-        $currStatus = 'UP';
-        if (isset($eq['status'])) $currStatus = in_array(strtolower($eq['status']), ['up', 'online'], true) ? 'UP' : 'DOWN';
-        elseif (array_key_exists('down_since', $eq)) $currStatus = $eq['down_since'] === null ? 'UP' : 'DOWN';
-        $failuresCount = max(0, intval($eq['failures_count'] ?? $eq['failure_count'] ?? $eq['consecutive_losses'] ?? 0));
-        $maxLoss = max(0, intval($cfg['max_loss'] ?? $cfg['max_loss_allowed'] ?? $eq['max_loss_allowed'] ?? 0));
-        $criticalStatus = $currStatus === 'DOWN' && $failuresCount > $maxLoss;
-        $oldCriticalStatus = ($lastState['network'][$category][$name] ?? 'UP') === 'DOWN';
-        notifyStateChange($individualQueues, $newState, "network.$category.$name", $criticalStatus, $oldCriticalStatus, $inTime, $emails, $userChannels, 'network_down', 'network_up', [
-            'name' => $name, 'cat' => $category, 'ip' => $eq['ip'] ?? '', 'losses' => $failuresCount, 'maxLoss' => $maxLoss
-        ]);
-        $newState['network'][$category][$name] = $criticalStatus ? 'DOWN' : 'UP';
-    }
+}
+$as400StateFile = '/opt/supervision/data/as400_last_state.json';
+$as400ConfigFile = '/opt/supervision/data/as400_alert_config.json';
+$as400DbConfigFile = '/var/www/common/as400_db.php';
+$as400AlertState = json_decode(@file_get_contents($as400StateFile), true) ?: [];
+$as400Config = json_decode(@file_get_contents($as400ConfigFile), true) ?: [];
+
+if (is_array($as400Config) && is_file($as400DbConfigFile)) {
+    try {
+        $as400Db = require $as400DbConfigFile;
+        if (isset($as400Db['host'], $as400Db['user'], $as400Db['pass'], $as400Db['name'])) {
+            $pdo = new PDO("mysql:host={$as400Db['host']};dbname={$as400Db['name']};charset=utf8mb4", $as400Db['user'], $as400Db['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+            $levelsMap = ['critical' => 2, 'warning' => 3, 'notice' => 5];
+            $highestLevel = null;
+            foreach (['notice', 'warning', 'critical'] as $lvl) { if (!empty($as400Config[$lvl]['enabled'])) $highestLevel = $lvl; }
+            if ($highestLevel !== null) {
+                $maxPri = $levelsMap[$highestLevel] ?? 2;
+                $lastId = (int)($as400AlertState['last_id'] ?? 0);
+                $stmt = $pdo->prepare("SELECT id, receivedat, priority, message, fromhost FROM systemevents WHERE id > ? AND priority <= ? ORDER BY id ASC LIMIT 50");
+                $stmt->execute([$lastId, $maxPri]);
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $as400Interval = (int)($as400Config['reminder_interval'] ?? 0);
+                foreach ($rows as $r) {
+                    $lvlName = ($r['priority'] <= 2) ? 'critical' : (($r['priority'] <= 3) ? 'warning' : 'notice');
+                    $asRecipients = $as400Config[$lvlName]['emails'] ?? [];
+                    $alertKey = "as400:{$lvlName}:" . ($r['fromhost'] ?? 'host');
+                    $shouldSend = ($as400Interval === 0) || shouldSendServerAlert($alertKey, $as400Interval, $newState);
+                    if (!empty($asRecipients) && $shouldSend) {
+                        foreach ($asRecipients as $rcpt) {
+                            $rcpt = trim((string)$rcpt);
+                            if ($rcpt === '') continue;
+                            $m = "[AS400] Alerte Syslog ({$lvlName})\nDate : {$r['receivedat']}\nHost : {$r['fromhost']}\nMessage : {$r['message']}";
+                            if (!isset($individualQueues[$rcpt])) $individualQueues[$rcpt] = "";
+                            $individualQueues[$rcpt] .= $m . "\n\n" . str_repeat("-", 40) . "\n\n";
+                        }
+                    }
+                    if ((int)$r['id'] > $lastId) $lastId = (int)$r['id'];
+                }
+                $as400AlertState['last_id'] = $lastId;
+                file_put_contents($as400StateFile, json_encode($as400AlertState, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+            }
+        }
+    } catch (Exception $e) { writeLog('[ERROR] Traitement des alertes AS400 : ' . $e->getMessage()); }
 }
 $result = file_put_contents($stateFile, json_encode($newState, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 if ($result === false) writeLog("[ERROR] Impossible d'écrire dans {$stateFile}");
 else writeLog("[SUCCESS] last_state.json mis à jour");
-$subjects = [
-    'fr' => "Alerte Supervision Neo",
-    'en' => "Neo Supervision Alert",
-    'nl' => "Neo Toezicht Waarschuwing",
-    'de' => "Neo Überwachung Warnung",
-    'es' => "Alerta Supervisión Neo",
-    'pt' => "Alerta Supervisão Neo",
-    'it' => "Allerta Supervisione Neo"
-];
-
+$subjects = $i18n['subjects'] ?? ['fr' => "Alerte Supervision Neo"];
 foreach ($individualQueues as $recipient => $fullMessage) {
     if (empty(trim($fullMessage))) continue;
     if (getNotificationChannel($recipient, $userChannels) === 'push') {
         sendPushsaferNotification($recipient, $fullMessage, $userChannels);
         continue;
     }
-    $mailConfigFile = "/opt/supervision/data/mail_config.json";
-    $mailConfig = file_exists($mailConfigFile) ? (json_decode(@file_get_contents($mailConfigFile), true) ?: []) : [];
-    $fromEmail = !empty($mailConfig['from_email']) ? trim($mailConfig['from_email']) : 'supervision@localhost';
-    $senderName = !empty($mailConfig['sender_name']) ? trim($mailConfig['sender_name']) : 'Neo Supervision';
-    $replyTo = !empty($mailConfig['reply_to']) ? trim($mailConfig['reply_to']) : $fromEmail;
     $lang = getRecipientLang($recipient, $userChannels);
     $subject = $subjects[$lang] ?? $subjects['fr'];
     $headers = "From: =?UTF-8?B?" . base64_encode($senderName) . "?= <{$fromEmail}>\r\n" .
@@ -551,10 +362,7 @@ foreach ($individualQueues as $recipient => $fullMessage) {
                "Content-Transfer-Encoding: 8bit\r\n";
     $recipient = trim($recipient);
     writeLog("[DEBUG] Destinataire : " . var_export($recipient, true) . " [Lang: {$lang}]");
-    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-        writeLog("[ERROR] Adresse email invalide : " . var_export($recipient, true));
-        continue;
-    }
+    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) { writeLog("[ERROR] Adresse email invalide : " . var_export($recipient, true)); continue; }
     if (mail($recipient, $subject, $fullMessage, $headers)) writeLog("[SUCCESS] Mail envoyé à : {$recipient}");
     else writeLog("[ERROR] Échec de l'envoi à : {$recipient}");
 }

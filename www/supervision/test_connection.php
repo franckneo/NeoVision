@@ -23,7 +23,7 @@ import sys, json
 try:
     sys.path.insert(0, '/opt/supervision')
     from lib.servers import get_servers
-    from lib.crypto import decrypt_password, get_default_local_user
+    from lib.crypto import decrypt_password
     data = json.loads(sys.argv[1])
     ip = data.get('ip', '')
     srv_type = data.get('type', 'windows')
@@ -32,7 +32,7 @@ try:
     enc_password = data.get('enc_password', '')
     if srv_type == "linux":
         from lib.ssh import run_ssh
-        u = user if user else get_default_local_user()
+	u = user if user else get_default_local_user()
         res = run_ssh(u, ip, "echo OK", timeout=6)
         if res and res.returncode == 0:
             print(json.dumps({"success": True, "type": "ssh_ok", "user": u, "ip": ip}))

@@ -40,7 +40,7 @@ function t(key, fallback) { return I18N[key] || fallback || key; }
 const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang === "de") ? "de-DE" : (($currentLang === "es") ? "es-ES" : (($currentLang === "it") ? "it-IT" : (($currentLang === "nl") ? "nl-NL" : (($currentLang === "pt") ? "pt-PT" : "fr-FR"))))) ?>';
 </script>
 </head>
-<body class="dashboard">
+<body class="dashboard <?= (!empty($_COOKIE['darkMode']) && $_COOKIE['darkMode'] === 'enabled') ? 'dark-mode' : '' ?>">
 <div id="sidebar">
     <a href="all-disks.php" class="btn btn-blue all-disks-link"><?= __('btn_all_disks', 'All Disks') ?></a>
     <h2><?= __('sidebar_servers', 'Serveurs') ?></h2>
@@ -57,6 +57,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     <a href="uptimePC.php" class="btn btn-gray"><?= __('btn_status_pc', 'Status PC') ?></a>
     <a href="mailing.php" class="btn btn-blue">✉️</a>
     <a href="history.php" class="btn btn-gray"><?= __('btn_history', 'Historique') ?></a>
+    <a href="syslog.php" class="btn btn-green"><?= __('btn_as400', 'SYSLOG') ?></a>
     <button id="toggleDarkMode" class="btn btn-gray"><?= __('btn_dark_mode', 'Mode 🌙') ?></button>
     <a href="logout.php" class="btn btn-red"><?= __('btn_logout', 'Se déconnecter') ?></a>
     </div>
@@ -76,9 +77,10 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     <table id="uptimeTable">
     <thead><tr>
     <th onclick="sortTable('uptimeTable',0,'text')"><?= __('col_name', 'Nom') ?></th>
-    <th onclick="sortTable('uptimeTable',1,'uptime')"><?= __('col_uptime', 'Uptime') ?></th>
-    <th onclick="sortTable('uptimeTable',2,'date')"><?= __('col_last_update', 'Dernière mise à jour') ?></th>
-    <th onclick="sortTable('uptimeTable',3,'status')"><?= __('col_status', 'Statut') ?></th>
+    <th><?= __('col_ip', 'IP') ?></th>
+    <th onclick="sortTable('uptimeTable',2,'uptime')"><?= __('col_uptime', 'Uptime') ?></th>
+    <th onclick="sortTable('uptimeTable',3,'date')"><?= __('col_last_update', 'Dernière mise à jour') ?></th>
+    <th onclick="sortTable('uptimeTable',4,'status')"><?= __('col_status', 'Statut') ?></th>
     <th><?= __('col_cause', 'Cause') ?></th>
     </tr></thead>
     <tbody></tbody>
@@ -156,8 +158,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
 </div>
 </div>
 <script src="/assets/darkmode.js"></script>
-<script>window.NETWORK_ALERT_CONFIG = <?= json_encode($networkAlertConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
+<script>const PHP_NETWORK_ALERT_CONFIG=<?=json_encode($networkAlertConfig,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)?>;</script>
 <script src="/assets/js/dashboard.js"></script>
 </body>
 </html>
-

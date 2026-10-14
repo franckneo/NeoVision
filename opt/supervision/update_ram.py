@@ -4,11 +4,11 @@ import json
 import os
 import logging
 import time
-from lib.servers import get_servers, get_default_local_user
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="winrm")
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from lib.servers import get_servers
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
 from filelock import FileLock, Timeout
@@ -141,7 +141,7 @@ def main():
                     2,
                     2,
                     ip,
-                    s.get("user") or get_default_local_user()
+		    s.get("user") or get_default_local_user()
                 )
             elif s_type == "windows":
                 pwd = decrypt_password(

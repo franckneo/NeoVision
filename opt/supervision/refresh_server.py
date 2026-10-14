@@ -6,37 +6,31 @@ import logging
 import subprocess
 from datetime import datetime
 import winrm
-from lib.servers import get_servers, get_default_local_user
+from lib.servers import get_servers
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
 DATA_DIR = "/opt/supervision/data"
 LOG_FILE = "/var/log/supervision/refresh_server.log"
 CONFIG_FILE = f"{DATA_DIR}/alert_config.json"
 logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
 def format_uptime(seconds):
     days = seconds // 86400
     hours = (seconds % 86400) // 3600
     minutes = (seconds % 3600) // 60
     return f"{days} days, {hours} hours, {minutes} minutes"
-
 def write_json(path, data):
     temp = f"{path}.tmp"
     with open(temp, "w") as f:
         json.dump(data, f, indent=2)
     os.replace(temp, path)
-
 def get_ssh_cmd(user, ip, command):
-    return ["ssh", "-o", "StrictHostKeyChecking=accept-new", f"{user}@{ip}", command]
-
+    return ["ssh", "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=3", f"{user}@{ip}", command]
 def get_winrm_session(ip, user, password):
     if not password:
         raise RuntimeError("Mot de passe Windows absent")
-    return winrm.Session(ip, auth=(user, password), transport="ntlm", read_timeout_sec=30, operation_timeout_sec=20)
-
+    return winrm.Session(ip, auth=(user, password), transport="ntlm", read_timeout_sec=10, operation_timeout_sec=5)
 def winrm_output(result):
     return result.std_out.decode("utf-8-sig", errors="ignore").strip()
-
 def parse_size_to_gb(value):
     if not value:
         return 0
@@ -54,7 +48,6 @@ def parse_size_to_gb(value):
         return float(number) * units.get(unit, 1)
     except Exception:
         return 0
-
 def get_linux_disks(ip, user):
     result = subprocess.run(get_ssh_cmd(user, ip, "df -BG --output=source,size,pcent | tail -n +2"), capture_output=True, text=True, timeout=10)
     if result.returncode != 0:
@@ -68,7 +61,6 @@ def get_linux_disks(ip, user):
         if device.startswith("/dev/") and parse_size_to_gb(size) >= 7:
             disks[device] = {"total": size, "used_percent": percent}
     return disks
-
 def get_windows_disks(ip, user, password):
     session = get_winrm_session(ip, user, password)
     result = session.run_ps("Get-CimInstance Win32_LogicalDisk | Where-Object {$_.DriveType -eq 3} | ForEach-Object { $used=[math]::Round((($_.Size-$_.FreeSpace)/$_.Size)*100); Write-Output \"$($_.DeviceID),$used,$([math]::Round($_.Size/1GB))\" }")
@@ -80,7 +72,6 @@ def get_windows_disks(ip, user, password):
         if len(parts) == 3:
             disks[parts[0]] = {"used_percent": f"{parts[1]}%", "total": f"{parts[2]}GB"}
     return disks
-
 def get_linux_ram(ip, user):
     result = subprocess.run(get_ssh_cmd(user, ip, "free -m | awk 'NR==2{printf \"%.2f\", $3*100/$2}'"), capture_output=True, text=True, timeout=10)
     if result.returncode != 0:
@@ -89,7 +80,6 @@ def get_linux_ram(ip, user):
         return float(result.stdout.strip().replace(",", "."))
     except Exception:
         return -1.0
-
 def get_windows_ram(ip, user, password):
     session = get_winrm_session(ip, user, password)
     result = session.run_ps("$m=Get-CimInstance Win32_OperatingSystem; $used=[math]::Round((($m.TotalVisibleMemorySize-$m.FreePhysicalMemory)/$m.TotalVisibleMemorySize)*100,2); Write-Output $used")
@@ -100,7 +90,6 @@ def get_windows_ram(ip, user, password):
         return float(output.replace(",", ".").replace("%", ""))
     except Exception:
         return -1.0
-
 def get_linux_status(ip, user):
     reboot = subprocess.run(get_ssh_cmd(user, ip, "test -d /run/needrestart && echo true || echo false"), capture_output=True, text=True, timeout=10).stdout.strip() == "true"
     result = subprocess.run(get_ssh_cmd(user, ip, "apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"), capture_output=True, text=True, timeout=30)
@@ -109,7 +98,6 @@ def get_linux_status(ip, user):
     except Exception:
         updates = 0
     return {"updates_pending": updates, "reboot_required": reboot}
-
 def get_windows_status(ip, user, password):
     session = get_winrm_session(ip, user, password)
     result = session.run_ps("if (Test-Path 'C:\\Scripts\\update_status.json') { Get-Content -Raw 'C:\\Scripts\\update_status.json' } else { Write-Output 'null' }")
@@ -121,7 +109,6 @@ def get_windows_status(ip, user, password):
         return {"updates_pending": int(data.get("updates_pending", 0)), "reboot_required": bool(data.get("reboot_required", False))}
     except Exception as error:
         return {"error": f"json_parse_error: {error}"}
-
 def get_linux_uptime(ip, user):
     result = subprocess.run(get_ssh_cmd(user, ip, "cat /proc/uptime"), capture_output=True, text=True, timeout=10)
     if result.returncode != 0:
@@ -131,7 +118,6 @@ def get_linux_uptime(ip, user):
         return {"seconds": seconds, "days": seconds // 86400, "hours": (seconds % 86400) // 3600, "minutes": (seconds % 3600) // 60}
     except Exception:
         return {"error": "parse_failed"}
-
 def get_windows_uptime(ip, user, password):
     session = get_winrm_session(ip, user, password)
     result = session.run_ps("$os=Get-CimInstance Win32_OperatingSystem; $seconds=[int]((Get-Date)-$os.LastBootUpTime).TotalSeconds; Write-Output $seconds")
@@ -143,14 +129,12 @@ def get_windows_uptime(ip, user, password):
         return {"seconds": seconds, "days": seconds // 86400, "hours": (seconds % 86400) // 3600, "minutes": (seconds % 3600) // 60}
     except Exception:
         return {"error": "parse_failed"}
-
 def check_linux_service(ip, user, service):
     exists = subprocess.run(get_ssh_cmd(user, ip, f"systemctl list-unit-files {service}.service"), capture_output=True, text=True, timeout=8)
     if service not in exists.stdout:
         return None
     result = subprocess.run(get_ssh_cmd(user, ip, f"systemctl is-active {service}"), capture_output=True, text=True, timeout=8)
     return result.stdout.strip() or "inactive"
-
 def process_linux_services(ip, user, config):
     services = {}
     service_map = {
@@ -184,14 +168,12 @@ def process_linux_services(ip, user, config):
     if "squid" in services:
         services["squid"]["ports"] = ports
     return services
-
 def check_windows_process(session, process_name):
     result = session.run_ps(f'$process=Get-Process -Name "{process_name}" -ErrorAction SilentlyContinue; if ($process) {{ "running" }} else {{ "stopped" }}')
     if result.status_code != 0:
         return "error"
     status = winrm_output(result).lower()
     return status if status in ("running", "stopped") else "error"
-
 def check_windows_wsus(session):
     script = r'''$wsusSvc=(Get-Service -Name "WSUSService" -ErrorAction SilentlyContinue).Status;$appPool="N/A";if (Get-Module -ListAvailable -Name WebAdministration) { Import-Module WebAdministration -ErrorAction SilentlyContinue;$appPool=(Get-WebAppPoolState -Name "WsusPool" -ErrorAction SilentlyContinue).Value };$portOpen=Test-NetConnection -ComputerName localhost -Port 8530 -InformationLevel Quiet;@{wsus_service=if ($wsusSvc -eq "Running") {"running"} else {"stopped"};wsus_apppool=if ($appPool -eq "Started") {"running"} else {"stopped"};wsus_port=if ($portOpen) {"active"} else {"inactive"}}|ConvertTo-Json'''
     result = session.run_ps(script)
@@ -201,14 +183,12 @@ def check_windows_wsus(session):
         return json.loads(winrm_output(result))
     except Exception:
         return {}
-
 def load_alert_config():
     try:
         with open(CONFIG_FILE, "r") as f:
             return json.load(f)
     except Exception:
         return {}
-
 def process_windows_services(ip, user, password, server_name):
     session = get_winrm_session(ip, user, password)
     config = load_alert_config().get(server_name, {})
@@ -220,7 +200,6 @@ def process_windows_services(ip, user, password, server_name):
     if config.get("wsus_enabled", False) or "wsus" in server_name.lower():
         services.update(check_windows_wsus(session))
     return services
-
 def save_disks(target_name, timestamp, disks):
     path = f"{DATA_DIR}/{target_name}_disks.json"
     history = []
@@ -236,9 +215,8 @@ def save_disks(target_name, timestamp, disks):
     else:
         history.insert(0, entry)
     write_json(path, history[:90])
-
 def save_ram(target_name, timestamp, percent):
-    if percent <= 0:
+    if percent is None or percent <= 0:
         return
     path = f"{DATA_DIR}/{target_name}_ram.json"
     history = []
@@ -250,7 +228,6 @@ def save_ram(target_name, timestamp, percent):
             history = []
     history.insert(0, {"timestamp": timestamp, "percent": percent})
     write_json(path, history[:192])
-
 def main():
     if len(sys.argv) < 2:
         print("Erreur: serveur manquant")
@@ -262,7 +239,6 @@ def main():
         logging.error(f"Serveur {target_name} introuvable")
         print("Serveur introuvable")
         sys.exit(1)
-    default_user = get_default_local_user()
     ip = server.get("ip")
     server_type = server.get("type")
     user = server.get("user") or default_user
