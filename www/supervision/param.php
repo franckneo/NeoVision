@@ -125,7 +125,7 @@ $LANG = $LANG ?? [];
 <script>(function(){const isDark=document.cookie.split("; ").reduce((r,v)=>{const p=v.split("=");return p[0].trim()==="darkMode"?p[1]==="enabled":r;},false);if(isDark){document.documentElement.classList.add('dark-mode');}})();</script>
 <link rel="stylesheet" href="/assets/style.css">
 </head>
-<body class="dashboard">
+<body class="dashboard <?= (!empty($_COOKIE['darkMode']) && $_COOKIE['darkMode'] === 'enabled') ? 'dark-mode' : '' ?>">
 <div id="sidebar">
 <h2><?= __('settings_title', 'Paramètres') ?></h2>
 <div class="sidebar-servers-container">
