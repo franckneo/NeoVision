@@ -10,9 +10,7 @@ $secretKeyFile = '/opt/supervision/secret.key';
 $input = json_decode(file_get_contents('php://input'), true);
 $action = $input['action'] ?? '';
 if ($action === 'save_all') {
-    $accountsData = json_decode(@file_get_contents('/opt/supervision/data/accounts.json'), true) ?? [];
-    $localUser = trim($accountsData['local_user'] ?? '');
-    if ($localUser === '') { echo json_encode(['success' => false, 'output' => 'Erreur : aucun utilisateur local défini dans Paramètres.']); exit(); }
+    $localUser = trim($input['local_user'] ?? '');
     $sshAccounts = $input['ssh_accounts'] ?? [];
     $winrmAccounts = $input['winrm_accounts'] ?? [];
     $cleanSsh = [];
