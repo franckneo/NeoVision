@@ -73,7 +73,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     </div>
     </div>
     <div id="uptime" class="tab-content">
-    <h1><?= __('title_uptime_supervision', 'Supervision des uptimes') ?> <img src="neovision.jpg" class="logo"></h1>
+    <h1><?= __('title_uptime_supervision', 'Supervision des uptimes') ?> <img src="neovision.png" class="logo"></h1>
     <table id="uptimeTable">
     <thead><tr>
     <th onclick="sortTable('uptimeTable',0,'text')"><?= __('col_name', 'Nom') ?></th>
@@ -87,7 +87,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     </table>
     </div>
     <div id="disques" class="tab-content">
-    <h1><?= __('title_disks_supervision', 'Supervision des disques') ?> <img src="neovision.jpg" class="logo"></h1>
+    <h1><?= __('title_disks_supervision', 'Supervision des disques') ?> <img src="neovision.png" class="logo"></h1>
     <table id="disquesTable">
     <thead><tr>
     <th onclick="sortTable('disquesTable',0,'text')"><?= __('col_name', 'Nom') ?></th>
@@ -101,7 +101,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     </table>
     </div>
     <div id="memoire" class="tab-content">
-    <h1><?= __('title_memory_supervision', 'Supervision de la mémoire') ?> <img src="neovision.jpg" class="logo"></h1>
+    <h1><?= __('title_memory_supervision', 'Supervision de la mémoire') ?> <img src="neovision.png" class="logo"></h1>
     <table id="memoryTable">
     <thead><tr>
     <th onclick="sortTable('memoryTable',0,'text')"><?= __('col_name', 'Nom') ?></th>
@@ -113,7 +113,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     </div>
     <div id="update" class="tab-content">
     <div class="tab-header-row">
-    <h1><?= __('title_update_supervision', 'Supervision des mises à jour') ?> <img src="neovision.jpg" class="logo"></h1>
+    <h1><?= __('title_update_supervision', 'Supervision des mises à jour') ?> <img src="neovision.png" class="logo"></h1>
     <div class="tab-header-actions">
     <span id="refreshStatus"></span>
     <button id="refreshNowBtn" class="btn btn-blue">🔄 <?= __('btn_refresh', 'Actualiser') ?></button>
@@ -129,7 +129,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     </div>
     <div id="reboot" class="tab-content">
     <div class="tab-header-row">
-        <h1><?= __('title_reboot_supervision', 'Serveurs nécessitant un redémarrage') ?> <img src="neovision.jpg" class="logo"></h1>
+        <h1><?= __('title_reboot_supervision', 'Serveurs nécessitant un redémarrage') ?> <img src="neovision.png" class="logo"></h1>
         <div class="tab-header-actions">
             <span id="refreshStatusReboot"></span>
             <button id="refreshNowBtnReboot" class="btn btn-blue">🔄 <?= __('btn_refresh', 'Actualiser') ?></button>
@@ -145,15 +145,15 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
     </div>
 </div>
 <div id="view-switchs" class="view-section" style="display:none;">
-    <h1><?= __('title_switchs_supervision', 'Supervision des Switchs') ?> <img src="neovision.jpg" class="logo"></h1>
+    <h1><?= __('title_switchs_supervision', 'Supervision des Switchs') ?> <img src="neovision.png" class="logo"></h1>
     <div id="switchsQuadrants" class="network-quadrants"></div>
 </div>
 <div id="view-aps" class="view-section" style="display:none;">
-    <h1><?= __('title_aps_supervision', 'Supervision des Bornes Wi-Fi') ?> <img src="neovision.jpg" class="logo"></h1>
+    <h1><?= __('title_aps_supervision', 'Supervision des Bornes Wi-Fi') ?> <img src="neovision.png" class="logo"></h1>
     <div id="apsQuadrants" class="network-quadrants"></div>
 </div>
 <div id="view-others" class="view-section" style="display:none;">
-    <h1><?= __('title_others_supervision', 'Supervision Services / Interfaces') ?> <img src="neovision.jpg" class="logo"></h1>
+    <h1><?= __('title_others_supervision', 'Supervision Services / Interfaces') ?> <img src="neovision.png" class="logo"></h1>
     <div id="othersQuadrants" class="network-quadrants"></div>
 </div>
 </div>
