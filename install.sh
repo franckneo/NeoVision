@@ -30,16 +30,21 @@ log_info "Exécution sous root. Source : ${SCRIPT_DIR}"
 log_step 1 "Installation des dépendances"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography openssl sudo mailutils ssmtp logrotate ssl-cert
+apt-get install -y -qq apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography python3-venv python3-pip openssl sudo mailutils ssmtp logrotate ssl-cert
 
-log_step 2 "Création des répertoires et de la clé de chiffrement"
+log_step 2 "Création des répertoires, du venv Python et de la clé de chiffrement"
 mkdir -p "${OPT_DIR}"/{data/history,data/temp,scripts,wol} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets} /root/.ssh
 chmod 700 /root/.ssh
-
+if [ ! -d "${OPT_DIR}/venv" ]; then
+    python3 -m venv "${OPT_DIR}/venv"
+    "${OPT_DIR}/venv/bin/pip" install --upgrade pip -q
+    "${OPT_DIR}/venv/bin/pip" install -q "cryptography==50.0.2" "pywinrm==0.5.0" "requests==2.34.2" "requests_ntlm==1.3.0" "pyspnego==0.12.3" "xmltodict==1.0.4"
+    log_info "Environnement virtuel Python créé et initialisé."
+fi
 SECRET_KEY_FILE="${OPT_DIR}/secret.key"
 if [ ! -s "${SECRET_KEY_FILE}" ]; then
     umask 077
-    python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" > "${SECRET_KEY_FILE}"
+    "${OPT_DIR}/venv/bin/python3" -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" > "${SECRET_KEY_FILE}"
     log_info "Clé de chiffrement créée."
 else
     log_info "Clé de chiffrement existante conservée."
