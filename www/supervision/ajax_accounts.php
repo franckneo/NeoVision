@@ -13,10 +13,14 @@ if ($action === 'check_ssh_key' || $action === 'generate_ssh_key') {
     $accountsData = @json_decode(@file_get_contents($accountsFile), true) ?: [];
     $localUser = trim($accountsData['local_user'] ?? 'root');
     $pw = posix_getpwnam($localUser);
-    if (!$pw) { echo json_encode(['success' => false, 'error' => "Utilisateur '$localUser' introuvable"]); exit(); }
+    if (!$pw) {
+        echo json_encode(['success' => false, 'error' => "Utilisateur '$localUser' introuvable"]);
+        exit();
+    }
     $sshDir = rtrim($pw['dir'], '/') . '/.ssh';
     $keyFile = $sshDir . '/id_ed25519';
     $pubFile = $keyFile . '.pub';
+
     if ($action === 'check_ssh_key') {
         exec(sprintf("/usr/bin/sudo -n -u %s /bin/cat %s 2>/dev/null", escapeshellarg($localUser), escapeshellarg($pubFile)), $pubOut, $pubCode);
         $key = trim(implode("\n", $pubOut));
@@ -26,26 +30,43 @@ if ($action === 'check_ssh_key' || $action === 'generate_ssh_key') {
     if ($action === 'generate_ssh_key') {
         $force = !empty($input['force']);
         exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/test -f %s", escapeshellarg($localUser), escapeshellarg($keyFile)), $tOut, $tCode);
-        if ($tCode === 0 && !$force) { echo json_encode(['success' => false, 'already_exists' => true, 'error' => 'Une clé existe déjà. Confirmez pour écraser.']); exit(); }
+        if ($tCode === 0 && !$force) {
+            echo json_encode(['success' => false, 'already_exists' => true, 'error' => 'Une clé existe déjà. Confirmez pour écraser.']);
+            exit();
+        }
         exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/mkdir -p %s", escapeshellarg($localUser), escapeshellarg($sshDir)));
-        exec(sprintf("/usr/bin/sudo -n /bin/chmod 750 %s", escapeshellarg($sshDir)));
-        if ($localUser !== 'root') { exec(sprintf("/usr/bin/sudo -n /usr/sbin/usermod -aG %s www-data", escapeshellarg($localUser))); }
+        if ($localUser !== 'root') {
+            exec(sprintf("/usr/bin/sudo -n -u %s /bin/chmod 755 %s", escapeshellarg($localUser), escapeshellarg($pw['dir'])));
+            exec(sprintf("/usr/bin/sudo -n -u %s /bin/chmod 711 %s", escapeshellarg($localUser), escapeshellarg($sshDir)));
+        } else {
+            exec(sprintf("/bin/chmod 711 %s", escapeshellarg($sshDir)));
+        }
         exec(sprintf("/usr/bin/sudo -n -u %s /bin/rm -f %s %s", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg($pubFile)));
         exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/ssh-keygen -q -t ed25519 -N '' -f %s -C %s 2>&1", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg("supervision@$localUser")), $out, $code);
-        exec(sprintf("/usr/bin/sudo -n /bin/chmod 640 %s", escapeshellarg($keyFile)));
-        exec(sprintf("/usr/bin/sudo -n /bin/chmod 644 %s", escapeshellarg($pubFile)));
+        if ($localUser !== 'root') {
+            exec(sprintf("/usr/bin/sudo -n -u %s /bin/chmod 600 %s", escapeshellarg($localUser), escapeshellarg($keyFile)));
+            exec(sprintf("/usr/bin/sudo -n -u %s /bin/chmod 644 %s", escapeshellarg($localUser), escapeshellarg($pubFile)));
+        } else {
+            exec(sprintf("/bin/chmod 600 %s", escapeshellarg($keyFile)));
+            exec(sprintf("/bin/chmod 644 %s", escapeshellarg($pubFile)));
+        }
         exec(sprintf("/usr/bin/sudo -n -u %s /bin/cat %s 2>/dev/null", escapeshellarg($localUser), escapeshellarg($pubFile)), $genOut, $genCode);
         $genKey = trim(implode("\n", $genOut));
-        if ($code === 0 && !empty($genKey)) { echo json_encode(['success' => true, 'key' => $genKey]); }
-        else { echo json_encode(['success' => false, 'error' => implode(' ', $out) ?: 'Erreur génération']); }
+        if ($code === 0 && !empty($genKey)) {
+            echo json_encode(['success' => true, 'key' => $genKey]);
+        } else {
+            echo json_encode(['success' => false, 'error' => implode(' ', $out) ?: 'Erreur génération']);
+        }
         exit();
     }
 }
+
 if ($action === 'save_all') {
     $localUser = trim($input['local_user'] ?? '');
     $sshAccounts = $input['ssh_accounts'] ?? [];
     $winrmAccounts = $input['winrm_accounts'] ?? [];
     $cleanSsh = [];
+
     foreach ($sshAccounts as $ssh) {
         $name = trim($ssh['name'] ?? '');
         $user = trim($ssh['user'] ?? '');
@@ -57,6 +78,7 @@ if ($action === 'save_all') {
             ];
         }
     }
+
     $cleanWinrm = [];
     foreach ($winrmAccounts as $w) {
         $name = trim($w['name'] ?? '');
@@ -65,6 +87,7 @@ if ($action === 'save_all') {
         $newPwd = $w['new_password'] ?? '';
         $encPwd = $w['enc_password'] ?? '';
         if ($user === '') continue;
+
         if (!empty($newPwd)) {
             $pyScript = <<<PY
 import sys
