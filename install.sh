@@ -286,7 +286,7 @@ www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/collect.sh
 www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/history.sh
 www-data ALL=(ALL) NOPASSWD: /usr/bin/fping
 www-data ALL=(ALL) NOPASSWD: /usr/bin/wakeonlan
-www-data ALL=(ALL) NOPASSWD: /usr/bin/ssh-keygen, /bin/mkdir, /usr/bin/mkdir, /bin/rm, /usr/bin/rm, /bin/cat, /usr/bin/cat, /usr/bin/test, /bin/test, /bin/chmod, /usr/bin/chmod, /bin/chown, /usr/bin/chown, /usr/sbin/usermod
+www-data ALL=(ALL) NOPASSWD: /usr/bin/sshpass, /usr/bin/ssh-copy-id, /usr/bin/ssh, /usr/bin/ssh-keygen, /bin/mkdir, /usr/bin/mkdir, /bin/rm, /usr/bin/rm, /bin/cat, /usr/bin/cat, /usr/bin/test, /bin/test, /bin/chmod, /usr/bin/chmod, /bin/chown, /usr/bin/chown, /usr/sbin/usermod
 EOF
 chmod 440 "${SUDOERS_FILE}"
 visudo -cf "${SUDOERS_FILE}"
