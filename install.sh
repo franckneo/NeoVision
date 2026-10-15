@@ -272,6 +272,7 @@ chmod 750 "${OPT_DIR}" "${OPT_DIR}/scripts"
 chmod -R 770 "${OPT_DIR}/data"
 chmod 640 "${OPT_DIR}/secret.key"
 [ -d "${OPT_DIR}/wol" ] && chmod -R 750 "${OPT_DIR}/wol"
+[ -d "${OPT_DIR}/lib" ] && chmod 750 "${OPT_DIR}/lib" && chmod 640 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
 chmod 770 "${LOG_DIR}"
 find "${LOG_DIR}" -type f -exec chmod 660 {} + 2>/dev/null || true
 chown -R www-data:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
@@ -285,6 +286,7 @@ www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/collect.sh
 www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/history.sh
 www-data ALL=(ALL) NOPASSWD: /usr/bin/fping
 www-data ALL=(ALL) NOPASSWD: /usr/bin/wakeonlan
+www-data ALL=(ALL) NOPASSWD: /usr/bin/ssh-keygen, /bin/mkdir, /usr/bin/mkdir, /bin/rm, /usr/bin/rm, /bin/cat, /usr/bin/cat, /usr/bin/test, /bin/test, /bin/chmod, /usr/bin/chmod, /bin/chown, /usr/bin/chown, /usr/sbin/usermod
 EOF
 chmod 440 "${SUDOERS_FILE}"
 visudo -cf "${SUDOERS_FILE}"
