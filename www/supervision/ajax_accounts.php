@@ -44,7 +44,7 @@ if ($action === 'check_ssh_key' || $action === 'generate_ssh_key') {
         exec(sprintf("/usr/bin/sudo -n -u %s /bin/rm -f %s %s", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg($pubFile)));
         exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/ssh-keygen -q -t ed25519 -N '' -f %s -C %s 2>&1", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg("supervision@$localUser")), $out, $code);
         if ($localUser !== 'root') {
-            exec(sprintf("/usr/bin/sudo -n -u %s /bin/chmod 600 %s", escapeshellarg($localUser), escapeshellarg($keyFile)));
+            exec(sprintf("/usr/bin/sudo -n -u %s /bin/chmod 640 %s", escapeshellarg($localUser), escapeshellarg($keyFile)));
             exec(sprintf("/usr/bin/sudo -n -u %s /bin/chmod 644 %s", escapeshellarg($localUser), escapeshellarg($pubFile)));
         } else {
             exec(sprintf("/bin/chmod 600 %s", escapeshellarg($keyFile)));
