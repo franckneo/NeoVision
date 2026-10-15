@@ -290,11 +290,20 @@ chmod 440 "${SUDOERS_FILE}"
 visudo -cf "${SUDOERS_FILE}"
 
 log_step 12 "Configuration de Cron"
-cat > "${CRON_FILE}" <<'EOF'
-*/1 * * * * root /opt/supervision/scripts/collect.sh >/dev/null 2>&1
-*/5 * * * * root /opt/supervision/scripts/history.sh >/dev/null 2>&1
+cat <<'EOF' | crontab -
+MAILTO=""
+* * * * * /usr/bin/php /var/cron/supervision.php >/dev/null 2>&1 && /usr/bin/php /opt/supervision/mailing/notification.php >/dev/null 2>&1
+* * * * * /bin/bash -c '/opt/supervision/venv/bin/python /opt/supervision/history/history.py & /opt/supervision/venv/bin/python /opt/supervision/update_ping.py & /opt/supervision/venv/bin/python /opt/supervision/update_switchs.py & /opt/supervision/venv/bin/python /opt/supervision/update_wifi.py & /opt/supervision/venv/bin/python /opt/supervision/update_others.py & wait; /opt/supervision/venv/bin/python /opt/supervision/build_dashboard.py' >/dev/null 2>&1
+*/3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_ubuntu.py >/dev/null 2>&1
+*/3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_windows.py >/dev/null 2>&1
+*/5 * * * * /opt/supervision/venv/bin/python /opt/supervision/pcstatus.py >/dev/null 2>&1
+*/10 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_uptime.py >/dev/null 2>&1
+*/15 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_ram.py >/dev/null 2>&1
+0 */1 * * * /opt/supervision/venv/bin/python /opt/supervision/update_status.py >/dev/null 2>&1
+0 */6 * * * /opt/supervision/venv/bin/python /opt/supervision/update_disks.py >/dev/null 2>&1
+1 0 * * * /opt/supervision/venv/bin/python /opt/supervision/clean_json.py >/dev/null 2>&1
+1 0 1 * * /usr/bin/python3 /opt/supervision/clean_history.py >/dev/null 2>&1
 EOF
-chmod 644 "${CRON_FILE}"
 
 log_step 13 "Configuration de Logrotate"
 cat > /etc/logrotate.d/neovision <<'EOF'
