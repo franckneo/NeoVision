@@ -67,12 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $devEntry['type'] = trim($device['type'] ?? '');
                 if (trim($device['type'] ?? '') === 'snmp') {
                     $devEntry['snmp_version'] = trim($device['snmp_version'] ?? '1');
-		    $devEntry['community'] = trim($device['community'] ?? 'public');
-		    if ($devEntry['snmp_version'] === '3') {
-		        $devEntry['username'] = trim($device['username'] ?? '');
-		        $devEntry['privacy_password'] = trim($device['privacy_password'] ?? '');
-		    }
-		    $devEntry['oid'] = trim($device['oid'] ?? '');
+                    $devEntry['community'] = trim($device['community'] ?? 'public');
+                    if ($devEntry['snmp_version'] === '3') {
+                        $devEntry['username'] = trim($device['username'] ?? '');
+                        $devEntry['privacy_password'] = trim($device['privacy_password'] ?? '');
+                    }
+                    $devEntry['oid'] = trim($device['oid'] ?? '');
                 }
             }
             $groupedData[$site][] = $devEntry;
@@ -91,9 +91,7 @@ $serversRaw = file_exists($serversJsonPath) ? (json_decode(file_get_contents($se
 $servers = isset($serversRaw['servers']) && is_array($serversRaw['servers']) ? $serversRaw['servers'] : $serversRaw;
 $accountsJsonPath = '/opt/supervision/data/accounts.json';
 $accountsData = file_exists($accountsJsonPath) ? (json_decode(file_get_contents($accountsJsonPath), true) ?? []) : [];
-$accountsData = json_decode(@file_get_contents('/opt/supervision/data/accounts.json'), true) ?? [];
 $localSupervisorUser = trim($accountsData['local_user'] ?? '');
-if ($localUser === '') { echo json_encode(['success' => false, 'output' => 'Erreur : aucun utilisateur local défini dans Paramètres.']); exit(); }
 $sshAccounts = $accountsData['ssh_accounts'] ?? [];
 $usersPcFile = '/opt/supervision/data/pc/users.json';
 $pcsList = file_exists($usersPcFile) ? json_decode(file_get_contents($usersPcFile), true) : [];
@@ -161,6 +159,12 @@ $LANG = $LANG ?? [];
 <h3>⚙️ <?= __('local_supervisor_account', 'Compte local de supervision') ?></h3>
 <label><strong><?= __('local_system_user_label', 'Utilisateur système local (Source SSH) :') ?></strong></label>
 <input type="text" id="inputLocalSupervisorUser" class="table-input input-local-user" value="<?= htmlspecialchars($localSupervisorUser) ?>" placeholder="ex: user ou root">
+<div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+<button type="button" id="btnCheckSshKey" class="btn btn-blue" style="padding:4px 10px;font-size:12px;">Vérifier clé SSH</button>
+<button type="button" id="btnGenSshKey" class="btn btn-red" style="padding:4px 10px;font-size:12px;">Générer clé SSH (ed25519)</button>
+<span id="sshKeyStatus" style="font-size:12px;"></span>
+</div>
+</div>
 </div>
 <h3>🐧 <?= __('ssh_accounts_title', 'Comptes SSH (Ubuntu / Linux)') ?></h3>
 <table class="table-servers-config" id="tableSshAccounts">
@@ -193,7 +197,6 @@ $LANG = $LANG ?? [];
 </tbody>
 </table>
 <button type="button" class="btn btn-blue" onclick="addWinrmRow()">+ <?= __('btn_add_win_account', 'Ajouter un compte Windows') ?></button>
-</div>
 </div>
 
 <div id="view-serveurs" class="view-section param-view <?= $activeTab === 'serveurs' ? '' : 'view-hidden' ?>">
@@ -377,7 +380,6 @@ $LANG = $LANG ?? [];
 </table>
 </div>
 </div>
-
 <div id="view-langue" class="view-section param-view <?= $activeTab === 'langue' ? '' : 'view-hidden' ?>">
 <div class="stat-card">
 <h1><?= __('lang_settings_title', 'Langue') ?></h1>

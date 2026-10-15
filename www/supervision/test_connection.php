@@ -32,7 +32,8 @@ try:
     enc_password = data.get('enc_password', '')
     if srv_type == "linux":
         from lib.ssh import run_ssh
-	u = user if user else get_default_local_user()
+        from lib.servers import get_default_local_user
+        u = user if user else get_default_local_user()
         res = run_ssh(u, ip, "echo OK", timeout=6)
         if res and res.returncode == 0:
             print(json.dumps({"success": True, "type": "ssh_ok", "user": u, "ip": ip}))

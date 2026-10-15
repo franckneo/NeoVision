@@ -21,7 +21,7 @@ exit();
 }
 $localHome = ($localUser === 'root') ? '/root' : ('/home/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $localUser));
 $sshDir = $localHome . '/.ssh';
-$pubKeyPath = $sshDir . '/id_rsa.pub';
+$pubKeyPath = file_exists("$sshDir/id_ed25519.pub") ? "$sshDir/id_ed25519.pub" : "$sshDir/id_rsa.pub";
 $logs = [];
 $logs[] = "[*] " . sprintf(__('ssh_checking_key', "Vérification de la clé SSH locale pour '%s' (%s)..."), $localUser, $pubKeyPath);
 $checkCmd = "test -f " . escapeshellarg($pubKeyPath);

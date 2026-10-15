@@ -127,6 +127,40 @@ if(user)currentWinRow.querySelector('.input-srv-user').value=user;
 if(pwd){try{const res=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'encrypt_pwd',password:pwd})}),data=await res.json();if(data.success){currentWinRow.dataset.encPassword=data.enc_password;alert(t('alert_pwd_encrypted','Mot de passe chiffré et mis à jour pour ce serveur.'));}else{alert(t('msg_error','Erreur : ')+data.error);}}catch(err){alert(t('msg_network_error','Erreur réseau'));}}
 closeWinModal();
 };
+document.getElementById('btnCheckSshKey')?.addEventListener('click',async()=>{
+const st=document.getElementById('sshKeyStatus');
+if(st){st.textContent='Vérification...';st.style.color='#fff';}
+try{
+const res=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_ssh_key'})}),data=await res.json();
+if(!data.success){
+        if(st){st.textContent=data.error||'Erreur';st.style.color='#f85149';}
+        return;
+}
+if(st){
+        st.textContent=data.exists?'Clé présente':'Aucune clé';st.style.color=data.exists?'#3fb950':'#d29922';
+}
+}
+catch(e){
+        if(st){
+                st.textContent='Erreur réseau';st.style.color='#f85149';
+        }
+}
+});
+document.getElementById('btnGenSshKey')?.addEventListener('click',async()=>{
+const st=document.getElementById('sshKeyStatus');
+let force=false;
+try{
+const cRes=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_ssh_key'})}),cData=await cRes.json();
+if(cData.exists&&!confirm("Une clé existe déjà. Voulez-vous l'écraser ?"))return;
+force=!!cData.exists;
+}catch(e){return;}
+if(st){st.textContent='Génération...';st.style.color='#fff';}
+try{
+const res=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'generate_ssh_key',force:force})}),data=await res.json();
+if(data.success){if(st){st.textContent='Clé générée avec succès';st.style.color='#3fb950';}}
+else{if(st){st.textContent=data.error||'Erreur génération';st.style.color='#f85149';}}
+}catch(e){if(st){st.textContent='Erreur réseau';st.style.color='#f85149';}}
+});
 const sshModal=document.getElementById("sshModal"),sshConsole=document.getElementById("sshConsole"),sshTargetSpan=document.getElementById("sshModalTarget"),sshIpInput=document.getElementById("sshInputIp"),sshUserInput=document.getElementById("sshInputUser"),sshPassInput=document.getElementById("sshInputPassword"),sshLocalUserInput=document.getElementById("sshInputLocalUser"),sshProfileSelect=document.getElementById("sshProfileSelect"),btnRunSsh=document.getElementById("btnRunSsh");
 let currentSshRow=null;
 document.addEventListener('click',e=>{

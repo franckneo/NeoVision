@@ -9,6 +9,34 @@ $accountsFile = '/opt/supervision/data/accounts.json';
 $secretKeyFile = '/opt/supervision/secret.key';
 $input = json_decode(file_get_contents('php://input'), true);
 $action = $input['action'] ?? '';
+if ($action === 'check_ssh_key' || $action === 'generate_ssh_key') {
+    $accountsData = @json_decode(@file_get_contents($accountsFile), true) ?: [];
+    $localUser = trim($accountsData['local_user'] ?? 'root');
+    $pw = posix_getpwnam($localUser);
+    if (!$pw) { echo json_encode(['success' => false, 'error' => "Utilisateur '$localUser' introuvable"]); exit(); }
+    $sshDir = rtrim($pw['dir'], '/') . '/.ssh';
+    $keyFile = $sshDir . '/id_ed25519';
+    $pubFile = $keyFile . '.pub';
+    if ($action === 'check_ssh_key') {
+        exec(sprintf("/usr/bin/sudo -n -u %s /bin/cat %s 2>/dev/null", escapeshellarg($localUser), escapeshellarg($pubFile)), $pubOut, $pubCode);
+        $key = trim(implode("\n", $pubOut));
+        echo json_encode(['success' => true, 'exists' => ($pubCode === 0 && !empty($key)), 'key' => $key]);
+        exit();
+    }
+    if ($action === 'generate_ssh_key') {
+        $force = !empty($input['force']);
+        exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/test -f %s", escapeshellarg($localUser), escapeshellarg($keyFile)), $tOut, $tCode);
+        if ($tCode === 0 && !$force) { echo json_encode(['success' => false, 'already_exists' => true, 'error' => 'Une clé existe déjà. Confirmez pour écraser.']); exit(); }
+        exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/mkdir -p -m 700 %s", escapeshellarg($localUser), escapeshellarg($sshDir)));
+        exec(sprintf("/usr/bin/sudo -n -u %s /bin/rm -f %s %s", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg($pubFile)));
+        exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/ssh-keygen -q -t ed25519 -N '' -f %s -C %s 2>&1", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg("supervision@$localUser")), $out, $code);
+        exec(sprintf("/usr/bin/sudo -n -u %s /bin/cat %s 2>/dev/null", escapeshellarg($localUser), escapeshellarg($pubFile)), $genOut, $genCode);
+        $genKey = trim(implode("\n", $genOut));
+        if ($code === 0 && !empty($genKey)) { echo json_encode(['success' => true, 'key' => $genKey]); }
+        else { echo json_encode(['success' => false, 'error' => implode(' ', $out) ?: 'Erreur génération']); }
+        exit();
+    }
+}
 if ($action === 'save_all') {
     $localUser = trim($input['local_user'] ?? '');
     $sshAccounts = $input['ssh_accounts'] ?? [];
