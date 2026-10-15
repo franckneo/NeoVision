@@ -21,10 +21,19 @@ exit();
 }
 $localHome = ($localUser === 'root') ? '/root' : ('/home/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $localUser));
 $sshDir = $localHome . '/.ssh';
-$pubKeyPath = file_exists("$sshDir/id_ed25519.pub") ? "$sshDir/id_ed25519.pub" : "$sshDir/id_rsa.pub";
+$sudoPrefix = ($localUser !== 'root') ? "/usr/bin/sudo -n -u " . escapeshellarg($localUser) . " " : "";
+$pubKeyPath = "$sshDir/id_ed25519.pub";
+exec($sudoPrefix . "/usr/bin/test -f " . escapeshellarg($pubKeyPath), $dummyOut, $testCode);
+if ($testCode !== 0) {
+    $rsaPath = "$sshDir/id_rsa.pub";
+    exec($sudoPrefix . "/usr/bin/test -f " . escapeshellarg($rsaPath), $dummyRsa, $testRsaCode);
+    if ($testRsaCode === 0) {
+        $pubKeyPath = $rsaPath;
+    }
+}
 $logs = [];
 $logs[] = "[*] " . sprintf(__('ssh_checking_key', "Vérification de la clé SSH locale pour '%s' (%s)..."), $localUser, $pubKeyPath);
-$checkCmd = "test -f " . escapeshellarg($pubKeyPath);
+$checkCmd = $sudoPrefix . "/usr/bin/test -f " . escapeshellarg($pubKeyPath);
 exec($checkCmd . " 2>&1", $checkOut, $checkCode);
 if ($checkCode !== 0) {
 $logs[] = "[!] " . sprintf("Erreur : la clé publique '%s' est introuvable pour l'utilisateur '%s'.", $pubKeyPath, $localUser);
