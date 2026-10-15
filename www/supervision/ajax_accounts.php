@@ -27,9 +27,13 @@ if ($action === 'check_ssh_key' || $action === 'generate_ssh_key') {
         $force = !empty($input['force']);
         exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/test -f %s", escapeshellarg($localUser), escapeshellarg($keyFile)), $tOut, $tCode);
         if ($tCode === 0 && !$force) { echo json_encode(['success' => false, 'already_exists' => true, 'error' => 'Une clé existe déjà. Confirmez pour écraser.']); exit(); }
-        exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/mkdir -p -m 700 %s", escapeshellarg($localUser), escapeshellarg($sshDir)));
+        exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/mkdir -p %s", escapeshellarg($localUser), escapeshellarg($sshDir)));
+        exec(sprintf("/usr/bin/sudo -n /bin/chmod 750 %s", escapeshellarg($sshDir)));
+        if ($localUser !== 'root') { exec(sprintf("/usr/bin/sudo -n /usr/sbin/usermod -aG %s www-data", escapeshellarg($localUser))); }
         exec(sprintf("/usr/bin/sudo -n -u %s /bin/rm -f %s %s", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg($pubFile)));
         exec(sprintf("/usr/bin/sudo -n -u %s /usr/bin/ssh-keygen -q -t ed25519 -N '' -f %s -C %s 2>&1", escapeshellarg($localUser), escapeshellarg($keyFile), escapeshellarg("supervision@$localUser")), $out, $code);
+        exec(sprintf("/usr/bin/sudo -n /bin/chmod 640 %s", escapeshellarg($keyFile)));
+        exec(sprintf("/usr/bin/sudo -n /bin/chmod 644 %s", escapeshellarg($pubFile)));
         exec(sprintf("/usr/bin/sudo -n -u %s /bin/cat %s 2>/dev/null", escapeshellarg($localUser), escapeshellarg($pubFile)), $genOut, $genCode);
         $genKey = trim(implode("\n", $genOut));
         if ($code === 0 && !empty($genKey)) { echo json_encode(['success' => true, 'key' => $genKey]); }
