@@ -6,7 +6,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     header('Content-Type: application/json');
     $server = isset($_POST['server']) ? preg_replace('/[^a-zA-Z0-9_\-]/', '', $_POST['server']) : '';
     if (!empty($server)) {
-        $cmd = "/opt/supervision/venv/bin/python /opt/supervision/refresh_server.py " . escapeshellarg($server) . " 2>&1";
+        $acc = json_decode(@file_get_contents('/opt/supervision/data/accounts.json'), true);
+        $localUser = (!empty($acc['local_user']) && posix_getpwnam($acc['local_user'])) ? $acc['local_user'] : 'root';
+        $prefix = ($localUser !== 'root') ? "/usr/bin/sudo -u " . escapeshellarg($localUser) . " " : "";
+        $cmd = "{$prefix}/opt/supervision/venv/bin/python /opt/supervision/refresh_server.py " . escapeshellarg($server) . " 2>&1";
         exec($cmd, $output, $returnCode);
         echo json_encode(['success' => ($returnCode === 0)]);
     } else {
