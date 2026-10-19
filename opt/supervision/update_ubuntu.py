@@ -98,27 +98,21 @@ def main():
     servers = get_servers()
     try:
         with open(CONFIG_FILE, "r") as f:
-            alert_config = json.load(f)
-
+            raw_cfg = json.load(f)
+            alert_config = {item["name"]: item for item in raw_cfg if isinstance(item, dict) and "name" in item} if isinstance(raw_cfg, list) else (raw_cfg if isinstance(raw_cfg, dict) else {})
     except Exception:
         logging.exception("Impossible de lire alert_config.json")
         alert_config = {}
-    linux_servers = [
-        s for s in servers
-        if s.get("type") == "linux"
-    ]
+    linux_servers = [s for s in servers if s.get("type") == "linux"]
     with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = [
-            executor.submit(process_server, s, alert_config)
-            for s in linux_servers
-        ]
+        futures = [executor.submit(process_server, s, alert_config) for s in linux_servers]
         for future in as_completed(futures):
             try:
                 future.result()
             except Exception:
                 logging.exception("Worker exception")
-
     logging.info("========== END update_ubuntu ==========")
+
 if __name__ == "__main__":
     try:
         lock = FileLock(LOCK_FILE, timeout=5)
