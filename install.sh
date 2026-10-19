@@ -285,20 +285,24 @@ systemctl restart apache2
 log_step 10 "Application des permissions"
 find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
 chown -R root:www-data "${OPT_DIR}" "${LOG_DIR}"
-chmod 750 "${OPT_DIR}" "${OPT_DIR}/scripts"
-chmod -R 770 "${OPT_DIR}/data"
+chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts"
+chmod -R 775 "${OPT_DIR}/data"
+chmod g+s "${OPT_DIR}/data" "${LOG_DIR}"
 chmod 640 "${OPT_DIR}/secret.key"
-[ -d "${OPT_DIR}/wol" ] && chmod -R 750 "${OPT_DIR}/wol"
-[ -d "${OPT_DIR}/lib" ] && chmod 750 "${OPT_DIR}/lib" && chmod 640 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
-chmod 770 "${LOG_DIR}"
+[ -d "${OPT_DIR}/wol" ] && chmod -R 755 "${OPT_DIR}/wol"
+[ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && chmod 644 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
+chmod 775 "${LOG_DIR}"
 for logfile in history.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do [ ! -f "${LOG_DIR}/${logfile}" ] && touch "${LOG_DIR}/${logfile}"; done
 chown -R www-data:www-data "${LOG_DIR}"
-chmod 775 "${LOG_DIR}"
 chmod 664 "${LOG_DIR}"/*.log 2>/dev/null || true
 chown -R www-data:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 chmod -R 750 "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 chown root:www-data "${AUTH_CONFIG}"
 chmod 640 "${AUTH_CONFIG}"
+if [ -f "${OPT_DIR}/data/accounts.json" ]; then
+    LUSER="$(jq -r '.local_user // empty' "${OPT_DIR}/data/accounts.json" 2>/dev/null)"
+    [ -n "${LUSER}" ] && id "${LUSER}" &>/dev/null && usermod -aG www-data "${LUSER}"
+fi
 
 log_step 11 "Configuration de Sudoers"
 cat > "${SUDOERS_FILE}" <<'EOF'
@@ -306,6 +310,7 @@ www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/collect.sh
 www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/history.sh
 www-data ALL=(ALL) NOPASSWD: /usr/bin/fping
 www-data ALL=(ALL) NOPASSWD: /usr/bin/wakeonlan
+www-data ALL=(ALL) NOPASSWD: /opt/supervision/venv/bin/python /opt/supervision/refresh_server.py *
 www-data ALL=(ALL) NOPASSWD: /usr/bin/sshpass, /usr/bin/ssh-copy-id, /usr/bin/ssh, /usr/bin/ssh-keygen, /bin/mkdir, /usr/bin/mkdir, /bin/rm, /usr/bin/rm, /bin/cat, /usr/bin/cat, /usr/bin/test, /bin/test, /bin/chmod, /usr/bin/chmod, /bin/chown, /usr/bin/chown, /usr/sbin/usermod
 EOF
 chmod 440 "${SUDOERS_FILE}"
