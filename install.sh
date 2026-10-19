@@ -286,7 +286,7 @@ log_step 10 "Application des permissions"
 find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
 chown -R root:www-data "${OPT_DIR}" "${LOG_DIR}"
 chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts" "${OPT_DIR}/refresh_server.py"
-chmod -R 775 "${OPT_DIR}/data"
+chmod -R 777 "${OPT_DIR}/data"
 chmod g+s "${OPT_DIR}/data" "${LOG_DIR}"
 chmod 640 "${OPT_DIR}/secret.key"
 [ -d "${OPT_DIR}/wol" ] && chmod -R 755 "${OPT_DIR}/wol"

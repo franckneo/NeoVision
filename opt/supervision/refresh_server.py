@@ -278,7 +278,8 @@ def main():
     except Exception:
         logging.exception("Erreur refresh status")
     try:
-        alert_config = load_alert_config().get(target_name, {})
+        cfg = load_alert_config()
+        alert_config = cfg.get(target_name, {}) if isinstance(cfg, dict) else {}
         services = (
             process_linux_services(ip, user, alert_config)
             if server_type == "linux"
