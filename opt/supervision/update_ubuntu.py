@@ -7,7 +7,7 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from filelock import FileLock, Timeout
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers
+from lib.servers import get_servers, get_local_ssh_key, get_default_local_user
 DATA_DIR = "/opt/supervision/data"
 CONFIG_FILE = f"{DATA_DIR}/alert_config.json"
 LOCK_FILE = f"{DATA_DIR}/update_ubuntu.lock"
@@ -19,32 +19,12 @@ handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"
 logger.addHandler(handler)
 def check_systemd_service(ip, user, service_name):
     try:
-        check_exists = subprocess.run(
-            [
-                "ssh",
-                "-o", "StrictHostKeyChecking=accept-new",
-                "-o", "ConnectTimeout=5",
-                f"{user}@{ip}",
-                f"systemctl list-unit-files {service_name}.service"
-            ],
-            capture_output=True,
-            text=True,
-            timeout=8
-        )
+        k = get_local_ssh_key()
+        ssh_base = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=5"] + (["-i", k] if k else [])
+        check_exists = subprocess.run(ssh_base + [f"{user}@{ip}", f"systemctl list-unit-files {service_name}.service"], capture_output=True, text=True, timeout=8)
         if service_name not in check_exists.stdout:
             return None
-        r = subprocess.run(
-            [
-                "ssh",
-                "-o", "StrictHostKeyChecking=accept-new",
-                "-o", "ConnectTimeout=5",
-                f"{user}@{ip}",
-                f"systemctl is-active {service_name}"
-            ],
-            capture_output=True,
-            text=True,
-            timeout=8
-        )
+        r = subprocess.run(ssh_base + [f"{user}@{ip}", f"systemctl is-active {service_name}"], capture_output=True, text=True, timeout=8)
         status = r.stdout.strip()
         return status if status else "inactive"
     except Exception:
@@ -52,26 +32,11 @@ def check_systemd_service(ip, user, service_name):
         return "error"
 def check_tcp_port(ip, user, port):
     try:
-        command = (
-            f"timeout 5 bash -c "
-            f"\"cat < /dev/null > /dev/tcp/127.0.0.1/{port}\""
-        )
-
-        result = subprocess.run(
-            [
-                "ssh",
-                "-o", "StrictHostKeyChecking=accept-new",
-                "-o", "ConnectTimeout=5",
-                f"{user}@{ip}",
-                command
-            ],
-            capture_output=True,
-            text=True,
-            timeout=8
-        )
-
+        k = get_local_ssh_key()
+        ssh_base = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=5"] + (["-i", k] if k else [])
+        command = f"timeout 5 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/{port}'"
+        result = subprocess.run(ssh_base + [f"{user}@{ip}", command], capture_output=True, text=True, timeout=8)
         return "active" if result.returncode == 0 else "inactive"
-
     except Exception:
         logging.exception(f"[{ip}] Check TCP port {port} failed")
         return "error"
