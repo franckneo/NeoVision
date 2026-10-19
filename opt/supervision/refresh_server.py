@@ -25,7 +25,11 @@ def write_json(path, data):
     os.replace(temp, path)
 def get_ssh_cmd(user, ip, command):
     k = get_local_ssh_key()
-    return ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=3"] + (["-i", k] if k else []) + [f"{user}@{ip}", command]
+    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=5"]
+    if k and os.path.exists(k):
+        cmd += ["-i", k]
+    cmd += [f"{user}@{ip}", command]
+    return cmd
 def get_winrm_session(ip, user, password):
     if not password:
         raise RuntimeError("Mot de passe Windows absent")
