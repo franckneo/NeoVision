@@ -5,7 +5,6 @@ $netConfigFile = '/opt/supervision/data/network_alert_config.json';
 $serversFile = '/opt/supervision/data/servers.json';
 $stateFile = '/opt/supervision/data/last_state.json';
 $channelsFile = '/opt/supervision/data/notification_channels.json';
-$mailConfigFile = '/opt/supervision/data/mail_config.json';
 $i18nFile = __DIR__ . '/i18n.php';
 $networkFiles = ['switchs' => '/opt/supervision/data/network_switchs.json', 'aps' => '/opt/supervision/data/network_aps.json', 'others' => '/opt/supervision/data/network_others.json'];
 $i18n = file_exists($i18nFile) ? require $i18nFile : ['titles' => [], 'subjects' => [], 'messages' => []];
