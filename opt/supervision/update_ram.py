@@ -8,7 +8,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="winrm")
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers
+from lib.servers import get_servers, get_local_ssh_key
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
 from filelock import FileLock, Timeout
@@ -34,12 +34,8 @@ logger.addHandler(handler)
 def get_linux_memory_usage(ip, user):
     start = time.time()
     try:
-        cmd = [
-            "ssh",
-            "-o", "StrictHostKeyChecking=accept-new",
-            f"{user}@{ip}",
-            "free -m | awk 'NR==2{printf \"%.2f\", $3*100/$2}'"
-        ]
+        k=get_local_ssh_key()
+        cmd=["ssh","-o","BatchMode=yes","-o","StrictHostKeyChecking=accept-new"]+(["-i",k] if k else [])+[f"{user}@{ip}","free -m | awk 'NR==2{printf \"%.2f\", $3*100/$2}'"]
         r = subprocess.run(
             cmd,
             capture_output=True,

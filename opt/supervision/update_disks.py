@@ -6,7 +6,7 @@ import logging
 import time
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers
+from lib.servers import get_servers, get_local_ssh_key
 from filelock import FileLock, Timeout
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
@@ -37,18 +37,11 @@ def parse_size_to_gb(size_str):
     except Exception:
         logging.exception(f"Invalid size string: {size_str}")
         return 0
-
 def get_linux_disk_and_os(ip, user):
     start = time.time()
     try:
-        cmd = [
-            "ssh",
-            "-o", "StrictHostKeyChecking=accept-new",
-            "-o", "BatchMode=yes",
-            "-o", "ConnectTimeout=5",
-            f"{user}@{ip}",
-            "cat /etc/os-release | grep '^PRETTY_NAME=' | cut -d= -f2 | tr -d '\"'; echo '---'; df -BG --output=source,size,pcent | tail -n +2"
-        ]
+        k=get_local_ssh_key()
+        cmd=["ssh","-o","StrictHostKeyChecking=accept-new","-o","BatchMode=yes","-o","ConnectTimeout=5"]+(["-i",k] if k else [])+[f"{user}@{ip}","cat /etc/os-release | grep '^PRETTY_NAME=' | cut -d= -f2 | tr -d '\"'; echo '---'; df -BG --output=source,size,pcent | tail -n +2"]
         r = subprocess.run( cmd, capture_output=True, text=True, timeout=10)
         if r.returncode != 0:
             logging.error(f"[{ip}] SSH error: {r.stderr.strip()}")

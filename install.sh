@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # NeoVision - Installation Ubuntu 22.04 / 24.04 / 26.04, x86_64 / aarch64
 # Exécuter en root.
-
 set -eo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPT_DIR="/opt/supervision"
 WWW_DIR="/var/www"
@@ -11,7 +9,6 @@ LOG_DIR="/var/log/supervision"
 APACHE_CONF="/etc/apache2/sites-available/supervision.conf"
 SUDOERS_FILE="/etc/sudoers.d/supervision"
 CRON_FILE="/etc/cron.d/neovision"
-
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -19,7 +16,6 @@ log_step() { echo -e "\n${BLUE}=================================================
 log_info() { echo -e "${GREEN}[+]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 log_error() { echo -e "${RED}[ERREUR]${NC} $1"; }
-
 clear || true
 echo -e "${BLUE}######################################################################${NC}\n${CYAN}#                     INSTALLATION DE NEOVISION                      #${NC}\n${BLUE}######################################################################${NC}"
 
@@ -38,7 +34,7 @@ chmod 700 /root/.ssh
 if [ ! -d "${OPT_DIR}/venv" ]; then
     python3 -m venv "${OPT_DIR}/venv"
     "${OPT_DIR}/venv/bin/pip" install --upgrade pip -q
-    "${OPT_DIR}/venv/bin/pip" install -q "cryptography==50.0.2" "pywinrm==0.5.0" "requests==2.34.2" "requests_ntlm==1.3.0" "pyspnego==0.12.3" "xmltodict==1.0.4"
+    "${OPT_DIR}/venv/bin/pip" install -q "cryptography==50.0.2" "pywinrm==0.5.0" "requests==2.34.2" "requests_ntlm==1.3.0" "pyspnego==0.12.3" "xmltodict==1.0.4" "filelock"
     log_info "Environnement virtuel Python créé et initialisé."
 fi
 SECRET_KEY_FILE="${OPT_DIR}/secret.key"
@@ -61,6 +57,7 @@ fi
 
 log_step 4 "Activation des modules Apache"
 a2enmod rewrite ssl headers -q
+sed -i 's/^session.gc_maxlifetime = .*/session.gc_maxlifetime = 28800/' /etc/php/*/*/php.ini 2>/dev/null || true
 
 log_step 5 "Déploiement du backend"
 if [ -d "${SCRIPT_DIR}/opt/supervision" ]; then
@@ -72,6 +69,7 @@ elif [ -d "${SCRIPT_DIR}/opt" ]; then
 else
     log_warn "Aucun répertoire source du backend trouvé."
 fi
+[ ! -f "${OPT_DIR}/update_lstatus.py" ] && touch "${OPT_DIR}/update_lstatus.py" && chmod 750 "${OPT_DIR}/update_lstatus.py" && chown root:www-data "${OPT_DIR}/update_lstatus.py"
 
 log_step 6 "Initialisation des fichiers JSON"
 if [ ! -f "${OPT_DIR}/data/config.json" ]; then
@@ -135,6 +133,9 @@ elif [ -d "${SCRIPT_DIR}/www" ]; then
 else
     log_warn "Aucun répertoire source de l'interface web trouvé."
 fi
+mkdir -p "${WWW_DIR}/supervision/api"
+ln -sf "${OPT_DIR}/data" "${WWW_DIR}/supervision/api/data"
+ln -sf "${OPT_DIR}/data" "${WWW_DIR}/supervision/data"
 
 log_step 8 "Configuration de l'authentification"
 AUTH_CONFIG="${WWW_DIR}/common/auth_config.json"

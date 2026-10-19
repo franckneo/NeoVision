@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="winrm")
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers
+from lib.servers import get_servers, get_local_ssh_key, get_default_local_user
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
 from filelock import FileLock, Timeout
@@ -30,39 +30,12 @@ logger.addHandler(handler)
 def get_linux_update_status(ip,user):
     start=time.time()
     try:
-        reboot_cmd=[
-            "ssh",
-            "-o",
-            "StrictHostKeyChecking=accept-new",
-            f"{user}@{ip}",
-            "test -d /run/needrestart && echo true || echo false"
-        ]
-        r1=subprocess.run(
-            reboot_cmd,
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
+        k=get_local_ssh_key()
+        ssh_base=["ssh","-o","BatchMode=yes","-o","ConnectTimeout=5","-o","StrictHostKeyChecking=accept-new"]+(["-i",k] if k else [])
+        r1=subprocess.run(ssh_base+[f"{user}@{ip}","test -d /run/needrestart && echo true || echo false"],capture_output=True,text=True,timeout=10)
         reboot_required=r1.stdout.strip()=="true"
-        update_cmd=[
-            "ssh",
-            "-o",
-            "StrictHostKeyChecking=accept-new",
-            f"{user}@{ip}",
-            "apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"
-        ]
-        r2=subprocess.run(
-            update_cmd,
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        try:
-            updates_pending=int(r2.stdout.strip())
-        except Exception:
-            logging.exception(f"[{ip}] invalid update count")
-            updates_pending=0
-
+        r2=subprocess.run(ssh_base+[f"{user}@{ip}","apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"],capture_output=True,text=True,timeout=30)
+        updates_pending=int(r2.stdout.strip()) if r2.stdout.strip().isdigit() else 0
         return {
             "updates_pending":updates_pending,
             "reboot_required":reboot_required

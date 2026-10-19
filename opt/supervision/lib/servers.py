@@ -16,3 +16,6 @@ def get_default_local_user():
             return json.load(f).get("local_user","")
     except Exception:
         return ""
+def get_local_ssh_key():
+    u=get_default_local_user()
+    return f"/home/{u}/.ssh/id_ed25519" if u else ""
