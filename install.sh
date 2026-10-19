@@ -291,7 +291,10 @@ chmod 640 "${OPT_DIR}/secret.key"
 [ -d "${OPT_DIR}/wol" ] && chmod -R 750 "${OPT_DIR}/wol"
 [ -d "${OPT_DIR}/lib" ] && chmod 750 "${OPT_DIR}/lib" && chmod 640 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
 chmod 770 "${LOG_DIR}"
-find "${LOG_DIR}" -type f -exec chmod 660 {} + 2>/dev/null || true
+for logfile in history.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do [ ! -f "${LOG_DIR}/${logfile}" ] && touch "${LOG_DIR}/${logfile}"; done
+chown -R www-data:www-data "${LOG_DIR}"
+chmod 775 "${LOG_DIR}"
+chmod 664 "${LOG_DIR}"/*.log 2>/dev/null || true
 chown -R www-data:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 chmod -R 750 "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 chown root:www-data "${AUTH_CONFIG}"
