@@ -5,6 +5,7 @@ $netConfigFile = '/opt/supervision/data/network_alert_config.json';
 $serversFile = '/opt/supervision/data/servers.json';
 $stateFile = '/opt/supervision/data/last_state.json';
 $channelsFile = '/opt/supervision/data/notification_channels.json';
+$mailConfigFile = '/opt/supervision/data/mail_config.json';
 $i18nFile = __DIR__ . '/i18n.php';
 $networkFiles = ['switchs' => '/opt/supervision/data/network_switchs.json', 'aps' => '/opt/supervision/data/network_aps.json', 'others' => '/opt/supervision/data/network_others.json'];
 $i18n = file_exists($i18nFile) ? require $i18nFile : ['titles' => [], 'subjects' => [], 'messages' => []];
@@ -14,10 +15,67 @@ $rawServers = json_decode(@file_get_contents($serversFile), true) ?: [];
 $servers = isset($rawServers['servers']) && is_array($rawServers['servers']) ? $rawServers['servers'] : (is_array($rawServers) ? $rawServers : []);
 $lastState = json_decode(@file_get_contents($stateFile), true) ?: [];
 $userChannels = json_decode(@file_get_contents($channelsFile), true) ?: [];
+$mailConfigFile = '/opt/supervision/data/mail_config.json';
+$mailConfig = json_decode(@file_get_contents($mailConfigFile), true) ?: [];
 $newState = ['ping' => [], 'obsolete' => [], 'disks' => [], 'uptime' => [], 'reboot' => [], 'services' => [], 'network' => [], 'pending' => $lastState['pending'] ?? [], 'last_sent' => $lastState['last_sent'] ?? []];
 $individualQueues = [];
 $logFile = '/var/log/supervision/mailing.log';
 function writeLog($message) { global $logFile; file_put_contents($logFile, '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL, FILE_APPEND); }
+function smtpRead($socket) {
+    $response = '';
+    while (($line = fgets($socket, 515)) !== false) {
+        $response .= $line;
+        if (strlen($line) < 4 || $line[3] === ' ') break;
+    }
+    return $response;
+}
+function smtpCommand($socket, $command, $expectedCodes) {
+    if ($command !== '') fwrite($socket, $command . "\r\n");
+    $response = smtpRead($socket);
+    $code = (int)substr($response, 0, 3);
+    if (!in_array($code, $expectedCodes, true)) throw new Exception('SMTP ' . $code . ': ' . trim($response));
+    return $response;
+}
+function smtpSend($recipient, $subject, $message, $mailConfig) {
+    $host = trim((string)($mailConfig['smtp_host'] ?? '127.0.0.1'));
+    $port = (int)($mailConfig['smtp_port'] ?? 25);
+    $secure = strtolower(trim((string)($mailConfig['smtp_secure'] ?? 'none')));
+    $transport = $secure === 'ssl' ? 'ssl://' : '';
+    $context = stream_context_create(['ssl' => ['peer_name' => $host, 'verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false]]);
+    $errno = 0;
+    $errstr = '';
+    $socket = $transport === '' ? @fsockopen($host, $port, $errno, $errstr, 20) : @stream_socket_client($transport . $host . ':' . $port, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context);
+    if (!$socket) throw new Exception('Connexion SMTP impossible: ' . $errstr . ' (' . $errno . ')');
+    stream_set_timeout($socket, 20);
+    try {
+        smtpCommand($socket, '', [220]);
+        $ehlo = 'localhost';
+        smtpCommand($socket, 'EHLO ' . $ehlo, [250]);
+        if ($secure === 'tls') {
+            smtpCommand($socket, 'STARTTLS', [220]);
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) throw new Exception('Activation STARTTLS impossible');
+            smtpCommand($socket, 'EHLO ' . $ehlo, [250]);
+        }
+        if (!empty($mailConfig['smtp_auth'])) {
+            smtpCommand($socket, 'AUTH LOGIN', [334]);
+            smtpCommand($socket, base64_encode((string)($mailConfig['smtp_user'] ?? '')), [334]);
+            smtpCommand($socket, base64_encode((string)($mailConfig['smtp_pass'] ?? '')), [235]);
+        }
+        $from = trim((string)($mailConfig['from_email'] ?? ''));
+        smtpCommand($socket, 'MAIL FROM:<' . $from . '>', [250]);
+        smtpCommand($socket, 'RCPT TO:<' . $recipient . '>', [250, 251]);
+        smtpCommand($socket, 'DATA', [354]);
+        $body = preg_replace('/\r\n|\r|\n/', "\r\n", $message);
+        $body = preg_replace('/^\./m', '..', $body);
+        $headers = 'From: ' . trim((string)($mailConfig['sender_name'] ?? '')) . ' <' . $from . ">\r\n" . 'Reply-To: ' . trim((string)($mailConfig['reply_to'] ?? $from)) . "\r\n" . 'To: ' . $recipient . "\r\n" . 'Subject: =?UTF-8?B?' . base64_encode($subject) . "?=\r\n" . 'Date: ' . date(DATE_RFC2822) . "\r\n" . "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n";
+        fwrite($socket, $headers . "\r\n" . $body . "\r\n.\r\n");
+        smtpCommand($socket, '', [250]);
+        smtpCommand($socket, 'QUIT', [221, 250]);
+    } finally {
+        fclose($socket);
+    }
+    return true;
+}
 function isWithinTimeRange($start, $end) {
     if (empty($start) || empty($end)) return true;
     $now = date('H:i');
@@ -100,7 +158,7 @@ function sendPushsaferNotification($recipient, $message, $userChannels) {
     if ($pushKey === '') { writeLog("[ERROR] Clé Pushsafer absente pour : {$recipient}"); return false; }
     $lang = getRecipientLang($recipient, $userChannels);
     $titles = $i18n['titles'] ?? [];
-    $title = $titles[$lang] ?? "Supervision CERP : Notification / Alerte d'état";
+    $title = $titles[$lang] ?? "NEO Supervision : Notification / Alerte d'état";
     $postData = ['k' => $pushKey, 't' => $title, 'm' => trim($message), 's' => '11', 'v' => '3', 'i' => '1'];
     if (!empty($pushDevice)) $postData['d'] = $pushDevice;
     $ch = curl_init('https://www.pushsafer.com/api');
@@ -346,7 +404,7 @@ if (is_array($as400Config) && is_file($as400DbConfigFile)) {
 $result = file_put_contents($stateFile, json_encode($newState, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 if ($result === false) writeLog("[ERROR] Impossible d'écrire dans {$stateFile}");
 else writeLog("[SUCCESS] last_state.json mis à jour");
-$subjects = $i18n['subjects'] ?? ['fr' => "Alerte Supervision CERP"];
+$subjects = $i18n['subjects'] ?? ['fr' => "Alerte Supervision Neo"];
 foreach ($individualQueues as $recipient => $fullMessage) {
     if (empty(trim($fullMessage))) continue;
     if (getNotificationChannel($recipient, $userChannels) === 'push') {
@@ -354,11 +412,18 @@ foreach ($individualQueues as $recipient => $fullMessage) {
         continue;
     }
     $lang = getRecipientLang($recipient, $userChannels);
-    $subject = $subjects[$lang] ?? $subjects['fr'];
-    $headers = "From: supervision@cerp.be\r\nReply-To: supervision@cerp.be\r\nX-Mailer: PHP/" . phpversion() . "\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n";
+    $subject = $subjects[$lang] ?? ($subjects['fr'] ?? 'Alerte Supervision Neo');
     $recipient = trim($recipient);
     writeLog("[DEBUG] Destinataire : " . var_export($recipient, true) . " [Lang: {$lang}]");
     if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) { writeLog("[ERROR] Adresse email invalide : " . var_export($recipient, true)); continue; }
-    if (mail($recipient, $subject, $fullMessage, $headers)) writeLog("[SUCCESS] Mail envoyé à : {$recipient}");
-    else writeLog("[ERROR] Échec de l'envoi à : {$recipient}");
+    $mailConfig['sender_name'] = trim(str_replace(["\r", "\n"], '', (string)($mailConfig['sender_name'] ?? '')));
+    $mailConfig['from_email'] = trim(str_replace(["\r", "\n"], '', (string)($mailConfig['from_email'] ?? '')));
+    $mailConfig['reply_to'] = trim(str_replace(["\r", "\n"], '', (string)($mailConfig['reply_to'] ?? $mailConfig['from_email'])));
+    if (!filter_var($mailConfig['from_email'], FILTER_VALIDATE_EMAIL) || !filter_var($mailConfig['reply_to'], FILTER_VALIDATE_EMAIL)) { writeLog('[ERROR] Configuration SMTP: adresse expéditeur ou Reply-To invalide'); continue; }
+    try {
+        smtpSend($recipient, $subject, $fullMessage, $mailConfig);
+        writeLog("[SUCCESS] Mail SMTP envoyé à : {$recipient}");
+    } catch (Exception $e) {
+        writeLog("[ERROR] Échec SMTP pour {$recipient}: " . $e->getMessage());
+    }
 }
