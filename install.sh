@@ -125,6 +125,22 @@ if [ ! -f "${OPT_DIR}/data/wol.json" ]; then
     printf '{\n    "devices": []\n}\n' > "${OPT_DIR}/data/wol.json"
 fi
 
+if [ ! -f "${OPT_DIR}/data/alert_config.json" ]; then
+    echo "{}" > "${OPT_DIR}/data/alert_config.json"
+fi
+
+if [ ! -f "${OPT_DIR}/data/update_status.json" ]; then
+    cat > "${OPT_DIR}/data/update_status.json" <<'EOF'
+{
+    "running": false,
+    "message": "idle",
+    "timestamp": null,
+    "finished_at": null,
+    "pid": null
+}
+EOF
+fi
+
 log_step 7 "Déploiement de l'interface web"
 if [ -d "${SCRIPT_DIR}/var-www" ]; then
     cp -r "${SCRIPT_DIR}/var-www/"* "${WWW_DIR}/"

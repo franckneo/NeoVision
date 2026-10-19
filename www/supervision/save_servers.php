@@ -134,6 +134,24 @@ foreach ($deletedNames as $delName) {
 }
 $saveServersResult = @file_put_contents($serversFile, json_encode($newServers, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 $saveAlertResult = @file_put_contents($alertConfigFile, json_encode($alertConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+foreach ($newServers as $ns) {
+    $sName = $ns['name'];
+    $initFiles = [
+        "{$sName}_uptime.json" => ['timestamp' => '', 'uptime' => 'Injoignable', 'uptime_days' => null],
+        "{$sName}_ram.json" => [],
+        "{$sName}_disks.json" => [],
+        "{$sName}_status.json" => ['timestamp' => '', 'status' => ['updates_pending' => 0, 'reboot_required' => false]],
+        "{$sName}_os.json" => ['timestamp' => '', 'os' => ''],
+        "{$sName}_services.json" => ['timestamp' => '', 'ip' => $ns['ip'], 'services' => []]
+    ];
+    foreach ($initFiles as $fName => $fContent) {
+        $fullPath = $dataDir . $fName;
+        if (!file_exists($fullPath)) {
+            @file_put_contents($fullPath, json_encode($fContent, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            @chmod($fullPath, 0664);
+        }
+    }
+}
 if ($saveServersResult === false) {
     writeSaveLog("ERREUR CRITIQUE : Échec d'écriture dans $serversFile (droits www-data ?)");
     echo json_encode(['success' => false, 'error' => "Erreur d'écriture dans servers.json"]);
