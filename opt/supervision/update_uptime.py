@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="winrm")
 import winrm
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers
+from lib.servers import get_servers, get_local_ssh_key, get_default_local_user
 from lib.retry import run_with_retry
 from lib.crypto import decrypt_password
 from filelock import FileLock, Timeout
@@ -33,28 +33,16 @@ def format_uptime(seconds):
     minutes = (seconds % 3600) // 60
     return f"{days} days, {hours} hours, {minutes} minutes"
 
-
 def get_linux_uptime(ip, user):
     try:
-        r = subprocess.run(
-            [
-                "ssh",
-                "-o", "StrictHostKeyChecking=accept-new",
-                f"{user}@{ip}",
-                "cat /proc/uptime"
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
+        k = get_local_ssh_key()
+        cmd = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"] + (["-i", k] if k else []) + [f"{user}@{ip}", "cat /proc/uptime"]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         if r.returncode != 0:
             logging.error(f"[LINUX][{ip}] SSH error: {r.stderr.strip()}")
             return None
         uptime_seconds = int(float(r.stdout.split()[0]))
-        return {
-            "seconds": uptime_seconds,
-            "days": uptime_seconds // 86400
-        }
+        return {"seconds": uptime_seconds, "days": uptime_seconds // 86400}
     except Exception:
         logging.exception(f"[LINUX][{ip}] uptime failed")
         return None
