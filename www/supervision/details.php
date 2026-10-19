@@ -6,7 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     header('Content-Type: application/json');
     $server = isset($_POST['server']) ? preg_replace('/[^a-zA-Z0-9_\-]/', '', $_POST['server']) : '';
     if (!empty($server)) {
-        $cmd = "/opt/supervision/refresh_server.py " . escapeshellarg($server) . " 2>&1";
+        $cmd = "/opt/supervision/venv/bin/python /opt/supervision/refresh_server.py " . escapeshellarg($server) . " 2>&1";
         exec($cmd, $output, $returnCode);
         echo json_encode(['success' => ($returnCode === 0)]);
     } else {
