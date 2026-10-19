@@ -83,6 +83,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             echo json_encode(['success' => false, 'error' => "Erreur d'écriture"]);
         }
         exit();
+    } elseif ($_POST['action'] === 'save_mail_config') {
+        $mailConfigPath = '/opt/supervision/data/mail_config.json';
+        $mailConfig = [
+            'sender_name' => trim($_POST['sender_name'] ?? ''),
+            'from_email' => trim($_POST['from_email'] ?? ''),
+            'reply_to' => trim($_POST['reply_to'] ?? ''),
+            'smtp_mode' => trim($_POST['smtp_mode'] ?? 'local'),
+            'smtp_host' => trim($_POST['smtp_host'] ?? ''),
+            'smtp_port' => (int)($_POST['smtp_port'] ?? 25),
+            'smtp_auth' => ($_POST['smtp_auth'] ?? '0') === '1',
+            'smtp_user' => trim($_POST['smtp_user'] ?? ''),
+            'smtp_pass' => $_POST['smtp_pass'] ?? '',
+            'smtp_secure' => trim($_POST['smtp_secure'] ?? 'none')
+        ];
+        if (!filter_var($mailConfig['from_email'], FILTER_VALIDATE_EMAIL)) { echo json_encode(['success' => false, 'error' => 'Adresse expéditeur invalide']); exit(); }
+        if ($mailConfig['reply_to'] !== '' && !filter_var($mailConfig['reply_to'], FILTER_VALIDATE_EMAIL)) { echo json_encode(['success' => false, 'error' => 'Adresse de réponse invalide']); exit(); }
+        if ($mailConfig['smtp_port'] < 1 || $mailConfig['smtp_port'] > 65535) { echo json_encode(['success' => false, 'error' => 'Port SMTP invalide']); exit(); }
+        if (file_put_contents($mailConfigPath, json_encode($mailConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) !== false) { echo json_encode(['success' => true]); }
+        else { echo json_encode(['success' => false, 'error' => "Erreur d'écriture sur $mailConfigPath"]); }
+        exit();
     }
 }
 $activeTab = isset($_GET['lang']) ? 'langue' : ($_COOKIE['activeParamView'] ?? 'comptes');
@@ -113,6 +133,9 @@ $othersRaw = file_exists($othersPath) ? (json_decode(file_get_contents($othersPa
 $others = [];
 foreach ($othersRaw as $site => $devices) { if (is_array($devices)) { foreach ($devices as $d) { if (is_array($d)) { $d['site'] = $site; $others[] = $d; } } } }
 $LANG = $LANG ?? [];
+$mailConfigPath = '/opt/supervision/data/mail_config.json';
+$mailConfig = file_exists($mailConfigPath) ? (json_decode(file_get_contents($mailConfigPath), true) ?? []) : [];
+$mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' => '', 'smtp_mode' => 'local', 'smtp_host' => '127.0.0.1', 'smtp_port' => 25, 'smtp_auth' => false, 'smtp_user' => '', 'smtp_pass' => '', 'smtp_secure' => 'none'], $mailConfig);
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($_currentLang ?? 'fr') ?>">
@@ -130,9 +153,10 @@ $LANG = $LANG ?? [];
 <button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'comptes' ? 'active' : '' ?>" data-param="comptes"><?= __('tab_accounts', 'Comptes') ?></button>
 <button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'serveurs' ? 'active' : '' ?>" data-param="serveurs"><?= __('tab_servers', 'Serveurs') ?></button>
 <button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'pcs' ? 'active' : '' ?>" data-param="pcs"><?= __('tab_computers', 'Ordinateurs') ?></button>
-<button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'wifis' ? 'active' : '' ?>" data-param="wifis"><?= __('tab_wifi', 'Bornes Wifi') ?></button>
 <button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'switchs' ? 'active' : '' ?>" data-param="switchs"><?= __('tab_switchs', 'Switchs') ?></button>
+<button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'wifis' ? 'active' : '' ?>" data-param="wifis"><?= __('tab_wifi', 'Bornes Wifi') ?></button>
 <button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'others' ? 'active' : '' ?>" data-param="others"><?= __('tab_others', 'Autres Équipements') ?></button>
+<button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'emails' ? 'active' : '' ?>" data-param="emails">Emails</button>
 <button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'wol' ? 'active' : '' ?>" data-param="wol"><?= __('tab_wol', 'Relais WOL') ?></button>
 <button class="btn btn-blue all-disks-link param-nav-btn <?= $activeTab === 'langue' ? 'active' : '' ?>" data-param="langue"><?= __('tab_language', 'Langue') ?></button>
 </div>
@@ -395,7 +419,23 @@ $LANG = $LANG ?? [];
 </div>
 </div>
 </div>
-
+<div id="view-emails" class="view-section param-view <?= $activeTab === 'emails' ? '' : 'view-hidden' ?>">
+<div class="stat-card">
+<h1>Configuration des emails</h1>
+<p>Paramètres SMTP utilisés pour l'envoi des notifications.</p>
+<div class="modal-section"><label><strong>Nom de l'expéditeur</strong></label><input type="text" id="mailSenderName" class="field-input" value="<?= htmlspecialchars($mailConfig['sender_name'], ENT_QUOTES, 'UTF-8') ?>"></div>
+<div class="modal-section"><label><strong>Adresse expéditeur</strong></label><input type="email" id="mailFromEmail" class="field-input" value="<?= htmlspecialchars($mailConfig['from_email'], ENT_QUOTES, 'UTF-8') ?>"></div>
+<div class="modal-section"><label><strong>Adresse Reply-To</strong></label><input type="email" id="mailReplyTo" class="field-input" value="<?= htmlspecialchars($mailConfig['reply_to'], ENT_QUOTES, 'UTF-8') ?>"></div>
+<div class="modal-section"><label><strong>Mode SMTP</strong></label><select id="mailSmtpMode" class="field-input"><option value="local" <?= $mailConfig['smtp_mode'] === 'local' ? 'selected' : '' ?>>Relais local</option><option value="remote" <?= $mailConfig['smtp_mode'] === 'remote' ? 'selected' : '' ?>>Serveur SMTP distant</option></select></div>
+<div class="modal-section"><label><strong>Hôte SMTP</strong></label><input type="text" id="mailSmtpHost" class="field-input" value="<?= htmlspecialchars($mailConfig['smtp_host'], ENT_QUOTES, 'UTF-8') ?>"></div>
+<div class="modal-section"><label><strong>Port SMTP</strong></label><input type="number" id="mailSmtpPort" class="field-input" min="1" max="65535" value="<?= (int)$mailConfig['smtp_port'] ?>"></div>
+<div class="modal-section"><label><input type="checkbox" id="mailSmtpAuth" <?= $mailConfig['smtp_auth'] ? 'checked' : '' ?>> Authentification SMTP</label></div>
+<div class="modal-section"><label><strong>Utilisateur SMTP</strong></label><input type="text" id="mailSmtpUser" class="field-input" value="<?= htmlspecialchars($mailConfig['smtp_user'], ENT_QUOTES, 'UTF-8') ?>"></div>
+<div class="modal-section"><label><strong>Mot de passe SMTP</strong></label><input type="password" id="mailSmtpPass" class="field-input" autocomplete="new-password" value="<?= htmlspecialchars($mailConfig['smtp_pass'], ENT_QUOTES, 'UTF-8') ?>"></div>
+<div class="modal-section"><label><strong>Chiffrement</strong></label><select id="mailSmtpSecure" class="field-input"><option value="none" <?= $mailConfig['smtp_secure'] === 'none' ? 'selected' : '' ?>>Aucun</option><option value="tls" <?= $mailConfig['smtp_secure'] === 'tls' ? 'selected' : '' ?>>STARTTLS</option><option value="ssl" <?= $mailConfig['smtp_secure'] === 'ssl' ? 'selected' : '' ?>>SSL/TLS</option></select></div>
+<button type="button" id="btnSaveMailConfig" class="btn btn-red">Enregistrer</button>
+</div>
+</div>
 <div id="snmpModal" class="modal-overlay modal-overlay-snmp view-hidden" role="dialog" aria-modal="true">
 <div class="modal-card modal-card-snmp">
 <div class="modal-header">

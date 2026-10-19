@@ -161,3 +161,25 @@ const u=document.getElementById('snmpInputUsername'),p=document.getElementById('
 const modal=document.getElementById('snmpModal');
 if(modal){modal.classList.add('view-hidden');modal.style.setProperty('display','none','important');}
 });
+document.getElementById('btnSaveMailConfig')?.addEventListener('click',async()=>{
+const fd=new FormData();
+fd.append('action','save_mail_config');
+fd.append('sender_name',document.getElementById('mailSenderName').value.trim());
+fd.append('from_email',document.getElementById('mailFromEmail').value.trim());
+fd.append('reply_to',document.getElementById('mailReplyTo').value.trim());
+fd.append('smtp_mode',document.getElementById('mailSmtpMode').value);
+fd.append('smtp_host',document.getElementById('mailSmtpHost').value.trim());
+fd.append('smtp_port',document.getElementById('mailSmtpPort').value);
+fd.append('smtp_auth',document.getElementById('mailSmtpAuth').checked?'1':'0');
+fd.append('smtp_user',document.getElementById('mailSmtpUser').value.trim());
+fd.append('smtp_pass',document.getElementById('mailSmtpPass').value);
+fd.append('smtp_secure',document.getElementById('mailSmtpSecure').value);
+const button=document.getElementById('btnSaveMailConfig');
+button.disabled=true;
+try{
+const response=await fetch(window.location.href,{method:'POST',body:fd}),data=await response.json();
+if(data.success){alert('Configuration SMTP enregistrée.');location.reload();}
+else alert(data.error||'Erreur lors de la sauvegarde.');
+}catch(e){alert('Erreur réseau lors de la sauvegarde.');}
+finally{button.disabled=false;}
+});
