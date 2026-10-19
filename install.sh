@@ -103,24 +103,6 @@ if [ ! -f "${OPT_DIR}/data/servers.json" ]; then
 EOF
 fi
 
-if [ ! -f "${OPT_DIR}/data/smtp.json" ]; then
-    cat > "${OPT_DIR}/data/smtp.json" <<'EOF'
-{
-    "enabled": false,
-    "host": "",
-    "port": 587,
-    "encryption": "tls",
-    "username": "",
-    "password": "",
-    "from_email": "",
-    "to_email": "",
-    "alert_cpu_threshold": 90,
-    "alert_ram_threshold": 90,
-    "alert_disk_threshold": 90
-}
-EOF
-fi
-
 if [ ! -f "${OPT_DIR}/data/wol.json" ]; then
     printf '{\n    "devices": []\n}\n' > "${OPT_DIR}/data/wol.json"
 fi
