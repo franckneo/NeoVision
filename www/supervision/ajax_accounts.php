@@ -131,6 +131,7 @@ PY;
         'winrm_accounts' => $cleanWinrm
     ];
     if (file_put_contents($accountsFile, json_encode($dataToSave, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) !== false) {
+        if (!empty($localUser) && posix_getpwnam($localUser)) exec("sudo /usr/sbin/usermod -aG www-data " . escapeshellarg($localUser));
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['success' => false, 'error' => 'Impossible d\'écrire dans accounts.json']);
