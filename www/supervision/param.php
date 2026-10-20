@@ -87,9 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 	} elseif ($_POST['action'] === 'test_mail_config') {
 	    $mailConfigPath = '/opt/supervision/data/mail_config.json';
 	    $mailConfig = file_exists($mailConfigPath) ? (json_decode(file_get_contents($mailConfigPath), true) ?: []) : [];
-	    $recipient = trim((string)($mailConfig['reply_to'] ?? ''));
-	    if ($recipient === '') $recipient = trim((string)($mailConfig['from_email'] ?? ''));
-	    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) { echo json_encode(['success' => false, 'error' => 'Adresse de test invalide : renseignez Reply-To ou Adresse expéditeur']); exit(); }
+	    $recipient = trim((string)($mailConfig['test_recipient'] ?? ''));
+	    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) { echo json_encode(['success' => false, 'error' => 'Adresse destinataire du test invalide']); exit(); }
 	    try {
 	        smtpSend($recipient, 'Test de configuration SMTP', 'Cet email confirme que la configuration SMTP fonctionne.', $mailConfig);
 	        echo json_encode(['success' => true, 'recipient' => $recipient]);
@@ -103,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             'sender_name' => trim($_POST['sender_name'] ?? ''),
             'from_email' => trim($_POST['from_email'] ?? ''),
             'reply_to' => trim($_POST['reply_to'] ?? ''),
+	    'test_recipient' => trim($_POST['test_recipient'] ?? ''),
             'smtp_mode' => trim($_POST['smtp_mode'] ?? 'local'),
             'smtp_host' => trim($_POST['smtp_host'] ?? ''),
             'smtp_port' => (int)($_POST['smtp_port'] ?? 25),
