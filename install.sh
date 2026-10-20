@@ -264,10 +264,13 @@ systemctl daemon-reload
 systemctl restart apache2
 
 log_step 10 "Application des permissions"
+chown -R root:www-data "${OPT_DIR}"
 find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
 [ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
-chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts" "${OPT_DIR}/refresh_server.py"
+chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts"
+[ -f "${OPT_DIR}/refresh_server.py" ] && chmod 755 "${OPT_DIR}/refresh_server.py" || true
 chmod -R 777 "${OPT_DIR}/data"
+chmod g+s "${OPT_DIR}/data"
 mkdir -p "${OPT_DIR}/history"
 touch "${OPT_DIR}/history/alerts.csv"
 chown -R root:www-data "${OPT_DIR}/history"
@@ -276,8 +279,9 @@ find "${OPT_DIR}/history" -type f \( -name "*.json" -o -name "*.csv" \) -exec ch
 chmod 640 "${OPT_DIR}/secret.key"
 [ -d "${OPT_DIR}/wol" ] && chmod -R 755 "${OPT_DIR}/wol"
 [ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && chmod 644 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
-for logfile in history.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do [ ! -f "${LOG_DIR}/${logfile}" ] && touch "${LOG_DIR}/${logfile}"; done
+for logfile in history.log mailing.log notification.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do [ ! -f "${LOG_DIR}/${logfile}" ] && touch "${LOG_DIR}/${logfile}"; done
 chown -R www-data:www-data "${LOG_DIR}"
+chmod 2775 "${LOG_DIR}"
 chmod 664 "${LOG_DIR}"/*.log 2>/dev/null || true
 chown -R www-data:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 chmod -R 750 "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
@@ -325,7 +329,7 @@ cat > /etc/logrotate.d/neovision <<'EOF'
     compress
     delaycompress
     notifempty
-    create 0660 root www-data
+    create 0664 www-data www-data
 }
 EOF
 chmod 644 /etc/logrotate.d/neovision

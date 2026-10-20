@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($data['interval'])) {
                 $val = trim((string)$data['interval']);
                 if ($val === '') {
-                    unset($config[$name]['interval']); // hérite du global
+                    unset($config[$name]['interval']);
                 } else {
                     $config[$name]['interval'] = max(0, (int)$val);
                 }
