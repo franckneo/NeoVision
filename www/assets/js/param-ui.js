@@ -167,6 +167,7 @@ fd.append('action','save_mail_config');
 fd.append('sender_name',document.getElementById('mailSenderName').value.trim());
 fd.append('from_email',document.getElementById('mailFromEmail').value.trim());
 fd.append('reply_to',document.getElementById('mailReplyTo').value.trim());
+fd.append('test_recipient',document.getElementById('mailTestRecipient').value.trim());
 fd.append('smtp_mode',document.getElementById('mailSmtpMode').value);
 fd.append('smtp_host',document.getElementById('mailSmtpHost').value.trim());
 fd.append('smtp_port',document.getElementById('mailSmtpPort').value);
@@ -186,6 +187,7 @@ finally{button.disabled=false;}
 document.getElementById('btnTestMailConfig')?.addEventListener('click',async()=>{
 const button=document.getElementById('btnTestMailConfig'),fd=new FormData();
 fd.append('action','test_mail_config');
+fd.append('test_recipient',document.getElementById('mailTestRecipient').value.trim());
 button.disabled=true;
 try{
 const response=await fetch(window.location.href,{method:'POST',body:fd}),data=await response.json();
