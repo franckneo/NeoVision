@@ -77,8 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
             $groupedData[$site][] = $devEntry;
+	    $netConfigFile = '/opt/supervision/data/network_alert_config.json';
+            $netConfig = file_exists($netConfigFile) ? json_decode(file_get_contents($netConfigFile), true) : [];
+            if (!is_array($netConfig)) $netConfig = [];
+            $category = ['wifis' => 'wifis', 'switchs' => 'switchs', 'others' => 'others'][$type];
+            $deviceName = $devEntry['name'];
+            if ($deviceName !== '' && !isset($netConfig[$category][$deviceName])) $netConfig[$category][$deviceName] = ['enabled' => true];
         }
-        if (file_put_contents($filePath, json_encode($groupedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false) {
+        $devicesSaved = file_put_contents($filePath, json_encode($groupedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+        $alertsSaved = file_put_contents($netConfigFile, json_encode($netConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) !== false;
+	if ($devicesSaved && $alertsSaved) {
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => "Erreur d'écriture"]);
