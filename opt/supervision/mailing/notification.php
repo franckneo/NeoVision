@@ -29,7 +29,7 @@ function smtpRead($socket) {
     return $response;
 }
 function smtpCommand($socket, $command, $expectedCodes) {
-    if ($command !== '') fwrite($socket, $command . "\r\n");
+    if ($command !== '' && fwrite($socket, $command . "\r\n") === false) throw new Exception('Écriture de la commande SMTP impossible');
     $response = smtpRead($socket);
     $code = (int)substr($response, 0, 3);
     if (!in_array($code, $expectedCodes, true)) throw new Exception('SMTP ' . $code . ': ' . trim($response));
@@ -39,11 +39,13 @@ function smtpSend($recipient, $subject, $message, $mailConfig) {
     $host = trim((string)($mailConfig['smtp_host'] ?? '127.0.0.1'));
     $port = (int)($mailConfig['smtp_port'] ?? 25);
     $secure = strtolower(trim((string)($mailConfig['smtp_secure'] ?? 'none')));
-    $transport = $secure === 'ssl' ? 'ssl://' : '';
+    if (!in_array($secure, ['none', 'tls', 'ssl'], true)) throw new Exception('Mode de chiffrement SMTP invalide: ' . $secure);
     $context = stream_context_create(['ssl' => ['peer_name' => $host, 'verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false]]);
     $errno = 0;
     $errstr = '';
-    $socket = $transport === '' ? @fsockopen($host, $port, $errno, $errstr, 20) : @stream_socket_client($transport . $host . ':' . $port, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context);
+    $socket = $secure === 'ssl'
+        ? @stream_socket_client('ssl://' . $host . ':' . $port, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context)
+        : @stream_socket_client('tcp://' . $host . ':' . $port, $errno, $errstr, 20, STREAM_CLIENT_CONNECT, $context);
     if (!$socket) throw new Exception('Connexion SMTP impossible: ' . $errstr . ' (' . $errno . ')');
     stream_set_timeout($socket, 20);
     try {
@@ -67,7 +69,7 @@ function smtpSend($recipient, $subject, $message, $mailConfig) {
         $body = preg_replace('/\r\n|\r|\n/', "\r\n", $message);
         $body = preg_replace('/^\./m', '..', $body);
         $headers = 'From: ' . trim((string)($mailConfig['sender_name'] ?? '')) . ' <' . $from . ">\r\n" . 'Reply-To: ' . trim((string)($mailConfig['reply_to'] ?? $from)) . "\r\n" . 'To: ' . $recipient . "\r\n" . 'Subject: =?UTF-8?B?' . base64_encode($subject) . "?=\r\n" . 'Date: ' . date(DATE_RFC2822) . "\r\n" . "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n";
-        fwrite($socket, $headers . "\r\n" . $body . "\r\n.\r\n");
+        if (fwrite($socket, $headers . "\r\n" . $body . "\r\n.\r\n") === false) throw new Exception('Écriture du message SMTP impossible');
         smtpCommand($socket, '', [250]);
         smtpCommand($socket, 'QUIT', [221, 250]);
     } finally {

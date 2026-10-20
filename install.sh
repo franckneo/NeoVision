@@ -26,7 +26,7 @@ log_info "Exécution sous root. Source : ${SCRIPT_DIR}"
 log_step 1 "Installation des dépendances"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography python3-venv python3-pip openssl sudo mailutils ssmtp logrotate ssl-cert  iputils-ping
+apt-get install -y apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography python3-venv python3-pip openssl sudo logrotate ssl-cert  iputils-ping
 
 log_step 2 "Création des répertoires, du venv Python et de la clé de chiffrement"
 mkdir -p "${OPT_DIR}"/{data/history,data/temp,scripts,wol} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets} /root/.ssh

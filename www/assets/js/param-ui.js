@@ -183,3 +183,14 @@ else alert(data.error||'Erreur lors de la sauvegarde.');
 }catch(e){alert('Erreur réseau lors de la sauvegarde.');}
 finally{button.disabled=false;}
 });
+document.getElementById('btnTestMailConfig')?.addEventListener('click',async()=>{
+const button=document.getElementById('btnTestMailConfig'),fd=new FormData();
+fd.append('action','test_mail_config');
+button.disabled=true;
+try{
+const response=await fetch(window.location.href,{method:'POST',body:fd}),data=await response.json();
+if(data.success)alert('Email de test envoyé à '+data.recipient+'.');
+else alert(data.error||"Échec de l'envoi de l'email de test.");
+}catch(e){alert("Erreur réseau lors de l'envoi de l'email de test.");}
+finally{button.disabled=false;}
+});

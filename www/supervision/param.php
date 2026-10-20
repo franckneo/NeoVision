@@ -83,6 +83,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             echo json_encode(['success' => false, 'error' => "Erreur d'écriture"]);
         }
         exit();
+	} elseif ($_POST['action'] === 'test_mail_config') {
+	    $mailConfigPath = '/opt/supervision/data/mail_config.json';
+	    $mailConfig = file_exists($mailConfigPath) ? (json_decode(file_get_contents($mailConfigPath), true) ?: []) : [];
+	    $recipient = trim((string)($mailConfig['reply_to'] ?? ''));
+	    if ($recipient === '') $recipient = trim((string)($mailConfig['from_email'] ?? ''));
+	    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) { echo json_encode(['success' => false, 'error' => 'Adresse de test invalide : renseignez Reply-To ou Adresse expéditeur']); exit(); }
+	    try {
+	        smtpSend($recipient, 'Test de configuration SMTP', 'Cet email confirme que la configuration SMTP fonctionne.', $mailConfig);
+	        echo json_encode(['success' => true, 'recipient' => $recipient]);
+	    } catch (Throwable $e) {
+	        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+	    }
+	    exit();
     } elseif ($_POST['action'] === 'save_mail_config') {
         $mailConfigPath = '/opt/supervision/data/mail_config.json';
         $mailConfig = [
@@ -434,6 +447,7 @@ $mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' =
 <div class="modal-section"><label><strong>Mot de passe SMTP</strong></label><input type="password" id="mailSmtpPass" class="field-input" autocomplete="new-password" value="<?= htmlspecialchars($mailConfig['smtp_pass'], ENT_QUOTES, 'UTF-8') ?>"></div>
 <div class="modal-section"><label><strong>Chiffrement</strong></label><select id="mailSmtpSecure" class="field-input"><option value="none" <?= $mailConfig['smtp_secure'] === 'none' ? 'selected' : '' ?>>Aucun</option><option value="tls" <?= $mailConfig['smtp_secure'] === 'tls' ? 'selected' : '' ?>>STARTTLS</option><option value="ssl" <?= $mailConfig['smtp_secure'] === 'ssl' ? 'selected' : '' ?>>SSL/TLS</option></select></div>
 <button type="button" id="btnSaveMailConfig" class="btn btn-red">Enregistrer</button>
+<button type="button" id="btnTestMailConfig" class="btn btn-blue">Email de test</button>
 </div>
 </div>
 <div id="snmpModal" class="modal-overlay modal-overlay-snmp view-hidden" role="dialog" aria-modal="true">
