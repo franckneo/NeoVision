@@ -57,11 +57,15 @@ return'up';
 async function loadNetworkData(type){
 const container=document.getElementById(`${type}Quadrants`);
 if(!container)return;
+const reqId=String(Date.now())+Math.random();
+container.dataset.reqId=reqId;
 try{
 const res=await fetch(`/api/data/network_${type}.json?v=`+Date.now());
-if(!res.ok){container.innerHTML=`<p>${t('msg_no_data_available','Aucune donnée disponible pour le moment.')}</p>`;return;}
+if(!res.ok){
+if(container.dataset.reqId===reqId)container.innerHTML=`<p>${t('msg_no_data_available','Aucune donnée disponible pour le moment.')}</p>`;
+return;
+}
 const rawData=await res.json();
-container.innerHTML="";
 let groupedData={};
 const globalTimestamp=rawData.timestamp||t('word_not_available','Non disponible');
 if(Array.isArray(rawData)){
@@ -74,8 +78,10 @@ groupedData[siteName].push(dev);
 groupedData=rawData.sites||rawData;
 }
 const sites=Object.keys(groupedData);
-if(sites.length===0){container.innerHTML=`<p>${t('msg_no_device_found','Aucun équipement trouvé.')}</p>`;return;}
 const isBlueStyle=(type==="others"),alertConfig=await fetchNetworkAlertConfig();
+if(container.dataset.reqId!==reqId)return;
+container.innerHTML="";
+if(sites.length===0){container.innerHTML=`<p>${t('msg_no_device_found','Aucun équipement trouvé.')}</p>`;return;}
 sites.forEach(site=>{
 const siteData=groupedData[site]||[],upCount=siteData.filter(d=>getNetworkBadgeState(d,type,alertConfig)==="up").length;
 const card=document.createElement("div");
@@ -111,7 +117,7 @@ container.appendChild(card);
 });
 }catch(e){
 console.error("Erreur réseau :",e);
-container.innerHTML=`<p>${t('msg_error_loading_network_data','Erreur de chargement des données réseau.')}</p>`;
+if(container.dataset.reqId===reqId)container.innerHTML=`<p>${t('msg_error_loading_network_data','Erreur de chargement des données réseau.')}</p>`;
 }
 }
 async function pollUpdateStatus(){
