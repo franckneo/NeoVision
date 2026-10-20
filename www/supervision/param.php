@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 	    $netConfigFile = '/opt/supervision/data/network_alert_config.json';
             $netConfig = file_exists($netConfigFile) ? json_decode(file_get_contents($netConfigFile), true) : [];
             if (!is_array($netConfig)) $netConfig = [];
-            $category = ['wifis' => 'wifis', 'switchs' => 'switchs', 'others' => 'others'][$type];
+            $category = ['wifis' => 'aps', 'switchs' => 'switchs', 'others' => 'others'][$type];
             $deviceName = $devEntry['name'];
             if ($deviceName !== '' && !isset($netConfig[$category][$deviceName])) $netConfig[$category][$deviceName] = ['enabled' => true];
         }
