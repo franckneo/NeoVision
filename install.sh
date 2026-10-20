@@ -265,20 +265,17 @@ systemctl restart apache2
 
 log_step 10 "Application des permissions"
 find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
-chown -R root:www-data "${OPT_DIR}" "${LOG_DIR}"
 [ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
 chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts" "${OPT_DIR}/refresh_server.py"
 chmod -R 777 "${OPT_DIR}/data"
 mkdir -p "${OPT_DIR}/history"
+touch "${OPT_DIR}/history/alerts.csv"
 chown -R root:www-data "${OPT_DIR}/history"
-chmod 2750 "${OPT_DIR}/history"
-find "${OPT_DIR}/history" -type f -name "*.json" -exec chmod 664 {} +
-find "${OPT_DIR}/history" -type f -name "*.csv" -exec chmod 664 {} +
-chmod g+s "${OPT_DIR}/data" "${LOG_DIR}"
+chmod 2770 "${OPT_DIR}/history"
+find "${OPT_DIR}/history" -type f \( -name "*.json" -o -name "*.csv" \) -exec chmod 664 {} +
 chmod 640 "${OPT_DIR}/secret.key"
 [ -d "${OPT_DIR}/wol" ] && chmod -R 755 "${OPT_DIR}/wol"
 [ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && chmod 644 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
-chmod 775 "${LOG_DIR}"
 for logfile in history.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do [ ! -f "${LOG_DIR}/${logfile}" ] && touch "${LOG_DIR}/${logfile}"; done
 chown -R www-data:www-data "${LOG_DIR}"
 chmod 664 "${LOG_DIR}"/*.log 2>/dev/null || true
