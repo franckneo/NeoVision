@@ -292,9 +292,9 @@ body.dark-mode .history-table th { background: #333 !important; color: #3498db !
 body.dark-mode .history-table td { border-color: #444 !important; color: #eee !important; }
 body.dark-mode .history-table tbody tr:nth-child(even) { background: #242424 !important; }
 body.dark-mode .history-table tbody tr:hover { background: #3a3a3a !important; }
-body.dark-mode .history-select { background: #1e1e1e !important; color: #fff !important; border-color: #444 !important; color-scheme: dark; }
-body.dark-mode .history-select option { background: #1e1e1e !important; color: #fff !important; }
-body.dark-mode .history-reset { background: #333 !important; color: #fff !important; border-color: #444 !important; }
+body.dark-mode select { background: #1e1e1e !important; color: #fff !important; border-color: #444 !important; color-scheme: dark !important; }
+body.dark-mode select option { background: #1e1e1e !important; color: #fff !important; }
+body.dark-mode select option:checked, body.dark-mode select option:hover { background: #444 !important; color: #fff !important; }
 body.dark-mode .history-reset:hover { background: #444 !important; }
 body.dark-mode .history-subfilters { border-top-color: #444; }
 .dhcp-container { max-width: 1000px; margin: 0 auto; padding: 10px; }
