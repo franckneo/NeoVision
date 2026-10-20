@@ -8,7 +8,6 @@ WWW_DIR="/var/www"
 LOG_DIR="/var/log/supervision"
 APACHE_CONF="/etc/apache2/sites-available/supervision.conf"
 SUDOERS_FILE="/etc/sudoers.d/supervision"
-CRON_FILE="/etc/cron.d/neovision"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -270,6 +269,11 @@ chown -R root:www-data "${OPT_DIR}" "${LOG_DIR}"
 [ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
 chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts" "${OPT_DIR}/refresh_server.py"
 chmod -R 777 "${OPT_DIR}/data"
+mkdir -p "${OPT_DIR}/history"
+chown -R root:www-data "${OPT_DIR}/history"
+chmod 2750 "${OPT_DIR}/history"
+find "${OPT_DIR}/history" -type f -name "*.json" -exec chmod 664 {} +
+find "${OPT_DIR}/history" -type f -name "*.csv" -exec chmod 664 {} +
 chmod g+s "${OPT_DIR}/data" "${LOG_DIR}"
 chmod 640 "${OPT_DIR}/secret.key"
 [ -d "${OPT_DIR}/wol" ] && chmod -R 755 "${OPT_DIR}/wol"
@@ -302,7 +306,7 @@ visudo -cf "${SUDOERS_FILE}"
 log_step 12 "Configuration de Cron"
 cat <<'EOF' | crontab -
 MAILTO=""
-* * * * * /usr/bin/php /var/cron/supervision.php >/dev/null 2>&1 && /usr/bin/php /opt/supervision/mailing/notification.php >/dev/null 2>&1
+* * * * * /usr/bin/php /opt/supervision/mailing/notification.php >> /var/log/supervision/notification.log 2>&1
 * * * * * /bin/bash -c '/opt/supervision/venv/bin/python /opt/supervision/history/history.py & /opt/supervision/venv/bin/python /opt/supervision/update_ping.py & /opt/supervision/venv/bin/python /opt/supervision/update_switchs.py & /opt/supervision/venv/bin/python /opt/supervision/update_wifi.py & /opt/supervision/venv/bin/python /opt/supervision/update_others.py & wait; /opt/supervision/venv/bin/python /opt/supervision/build_dashboard.py' >/dev/null 2>&1
 */3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_ubuntu.py >/dev/null 2>&1
 */3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_windows.py >/dev/null 2>&1
