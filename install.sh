@@ -267,6 +267,7 @@ systemctl restart apache2
 log_step 10 "Application des permissions"
 find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
 chown -R root:www-data "${OPT_DIR}" "${LOG_DIR}"
+[ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
 chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts" "${OPT_DIR}/refresh_server.py"
 chmod -R 777 "${OPT_DIR}/data"
 chmod g+s "${OPT_DIR}/data" "${LOG_DIR}"
