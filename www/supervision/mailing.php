@@ -162,6 +162,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $emailsArr = array_values(array_filter(array_map('trim', explode(',', $emailsRaw)), static fn($v) => $v !== ''));
                 if (!isset($netConfig[$type][$devName]) || !is_array($netConfig[$type][$devName])) $netConfig[$type][$devName] = [];
                 $netConfig[$type][$devName]['emails'] = $emailsArr;
+		if ($type === 'aps') {
+		    if (!isset($netConfig['wifis'][$devName]) || !is_array($netConfig['wifis'][$devName])) $netConfig['wifis'][$devName] = [];
+		    $netConfig['wifis'][$devName] = array_merge($netConfig['wifis'][$devName], $netConfig['aps'][$devName]);
+		}
                 $netConfig[$type][$devName]['time_start'] = $data['start'] ?? '08:00';
                 $netConfig[$type][$devName]['time_end'] = $data['end'] ?? '20:00';
                 $netConfig[$type][$devName]['ping_enabled'] = isset($data['ping']);
@@ -185,8 +189,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    foreach ($netCategories as $type => $tabId) {
-        $jsonFile = "/opt/supervision/data/network_{$type}.json";
+    foreach (array_merge($netCategories, ['wifis' => 'tab-wifis']) as $type => $tabId) {
+        $jsonFile = $type === 'aps' ? '/opt/supervision/data/wifi.json' : "/opt/supervision/data/network_{$type}.json";
         if (!file_exists($jsonFile)) continue;
         $rawNetData = json_decode(file_get_contents($jsonFile), true) ?: [];
         $validDevices = [];
