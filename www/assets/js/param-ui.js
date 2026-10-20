@@ -161,6 +161,11 @@ const u=document.getElementById('snmpInputUsername'),p=document.getElementById('
 const modal=document.getElementById('snmpModal');
 if(modal){modal.classList.add('view-hidden');modal.style.setProperty('display','none','important');}
 });
+const smtpAuth=document.getElementById('mailSmtpAuth');
+const smtpAuthFields=[document.getElementById('mailSmtpAuthFields'),document.getElementById('mailSmtpPassField')];
+function toggleSmtpAuthFields(){smtpAuthFields.forEach(field=>{if(field)field.style.display=smtpAuth.checked?'':'none';});}
+smtpAuth?.addEventListener('change',toggleSmtpAuthFields);
+if(smtpAuth)toggleSmtpAuthFields();
 document.getElementById('btnSaveMailConfig')?.addEventListener('click',async()=>{
 const fd=new FormData();
 fd.append('action','save_mail_config');
