@@ -2,6 +2,7 @@
 # NeoVision - Installation Ubuntu 22.04 / 24.04 / 26.04, x86_64 / aarch64
 # Exécuter en root.
 set -eo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPT_DIR="/opt/supervision"
 WWW_DIR="/var/www"
@@ -10,23 +11,36 @@ SVC_USER="neovision"
 SVC_HOME="/var/lib/neovision"
 APACHE_CONF="/etc/apache2/sites-available/supervision.conf"
 SUDOERS_FILE="/etc/sudoers.d/supervision"
+SECRET_KEY_FILE="${OPT_DIR}/secret.key"
+AUTH_CONFIG="${WWW_DIR}/common/auth_config.json"
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
-log_step() { echo -e "\n${BLUE}======================================================================${NC}\n${CYAN}[ÉTAPE $1]${NC} $2\n${BLUE}======================================================================${NC}"; }
-log_info() { echo -e "${GREEN}[+]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[!]${NC} $1"; }
+
+log_step()  { echo -e "\n${BLUE}======================================================================${NC}\n${CYAN}[ÉTAPE $1]${NC} $2\n${BLUE}======================================================================${NC}"; }
+log_info()  { echo -e "${GREEN}[+]${NC} $1"; }
+log_warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 log_error() { echo -e "${RED}[ERREUR]${NC} $1"; }
+
 clear || true
-echo -e "${BLUE}######################################################################${NC}\n${CYAN}#                     INSTALLATION DE NEOVISION                      #${NC}\n${BLUE}######################################################################${NC}"
+echo -e "${BLUE}######################################################################${NC}"
+echo -e "${CYAN}#                     INSTALLATION DE NEOVISION                      #${NC}"
+echo -e "${BLUE}######################################################################${NC}"
 
 log_step 0 "Vérification de l'environnement"
-if [ "$EUID" -ne 0 ]; then log_error "Ce script doit être exécuté en root."; exit 1; fi
+if [ "$EUID" -ne 0 ]; then
+    log_error "Ce script doit être exécuté en root."
+    exit 1
+fi
 log_info "Exécution sous root. Source : ${SCRIPT_DIR}"
 
 log_step 1 "Installation des dépendances"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography python3-venv python3-pip openssl sudo logrotate ssl-cert iputils-ping cifs-utils
+apt-get install -y apache2 cron php-ldap libapache2-mod-php php php-cli php-curl \
+    php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass \
+    python3-cryptography python3-venv python3-pip openssl sudo logrotate ssl-cert \
+    iputils-ping cifs-utils
 
 log_step 2 "Création de l'utilisateur de service"
 if ! id -u "${SVC_USER}" &>/dev/null; then
@@ -45,10 +59,10 @@ mkdir -p "${OPT_DIR}"/{data/history,data/temp,scripts,wol} "${LOG_DIR}" "${WWW_D
 if [ ! -d "${OPT_DIR}/venv" ]; then
     python3 -m venv "${OPT_DIR}/venv"
     "${OPT_DIR}/venv/bin/pip" install --upgrade pip -q
-    "${OPT_DIR}/venv/bin/pip" install -q "cryptography==50.0.2" "pywinrm==0.5.0" "requests==2.34.2" "requests_ntlm==1.3.0" "pyspnego==0.12.3" "xmltodict==1.0.4" "filelock"
+    "${OPT_DIR}/venv/bin/pip" install -q "cryptography==50.0.2" "pywinrm==0.5.0" \
+        "requests==2.34.2" "requests_ntlm==1.3.0" "pyspnego==0.12.3" "xmltodict==1.0.4" "filelock"
     log_info "Environnement virtuel Python créé et initialisé."
 fi
-SECRET_KEY_FILE="${OPT_DIR}/secret.key"
 if [ ! -s "${SECRET_KEY_FILE}" ]; then
     (
         umask 077
@@ -77,11 +91,11 @@ sed -i 's/^session.gc_maxlifetime = .*/session.gc_maxlifetime = 28800/' /etc/php
 
 log_step 6 "Déploiement du backend"
 if [ -d "${SCRIPT_DIR}/opt/supervision" ]; then
-    cp -r "${SCRIPT_DIR}/opt/supervision/"* "${OPT_DIR}/" 2>/dev/null || true
+    cp -r "${SCRIPT_DIR}/opt/supervision/"* "${OPT_DIR}/"
 elif [ -d "${SCRIPT_DIR}/opt-supervision" ]; then
-    cp -r "${SCRIPT_DIR}/opt-supervision/"* "${OPT_DIR}/" 2>/dev/null || true
+    cp -r "${SCRIPT_DIR}/opt-supervision/"* "${OPT_DIR}/"
 elif [ -d "${SCRIPT_DIR}/opt" ]; then
-    cp -r "${SCRIPT_DIR}/opt/"* "${OPT_DIR}/" 2>/dev/null || true
+    cp -r "${SCRIPT_DIR}/opt/"* "${OPT_DIR}/"
 else
     log_warn "Aucun répertoire source du backend trouvé."
 fi
@@ -103,7 +117,6 @@ if [ ! -f "${OPT_DIR}/data/config.json" ]; then
 }
 EOF
 fi
-
 if [ ! -f "${OPT_DIR}/data/servers.json" ]; then
     cat > "${OPT_DIR}/data/servers.json" <<'EOF'
 {
@@ -120,10 +133,8 @@ if [ ! -f "${OPT_DIR}/data/servers.json" ]; then
 }
 EOF
 fi
-
 [ -f "${OPT_DIR}/data/wol.json" ] || printf '{\n    "devices": []\n}\n' > "${OPT_DIR}/data/wol.json"
 [ -f "${OPT_DIR}/data/alert_config.json" ] || echo "{}" > "${OPT_DIR}/data/alert_config.json"
-
 if [ ! -f "${OPT_DIR}/data/update_status.json" ]; then
     cat > "${OPT_DIR}/data/update_status.json" <<'EOF'
 {
@@ -149,13 +160,15 @@ ln -sfn "${OPT_DIR}/data" "${WWW_DIR}/supervision/api/data"
 ln -sfn "${OPT_DIR}/data" "${WWW_DIR}/supervision/data"
 
 log_step 9 "Configuration de l'authentification"
-AUTH_CONFIG="${WWW_DIR}/common/auth_config.json"
 echo "Mode d'authentification :"
 echo "  1) Compte local"
 echo "  2) Annuaire LDAP / Active Directory"
 while true; do
     read -r -p "Choix [1-2] : " AUTH_CHOICE
-    case "${AUTH_CHOICE}" in 1|2) break ;; *) echo "Choix invalide. Saisir 1 ou 2." ;; esac
+    case "${AUTH_CHOICE}" in
+        1|2) break ;;
+        *) echo "Choix invalide. Saisir 1 ou 2." ;;
+    esac
 done
 
 read -r -p "Nom du compte administrateur local [admin] : " LOCAL_USERNAME
@@ -192,20 +205,20 @@ if ! [[ "${LDAP_PORT}" =~ ^[0-9]+$ ]] || [ "${LDAP_PORT}" -lt 1 ] || [ "${LDAP_P
 fi
 
 export AUTH_MODE LOCAL_USERNAME LOCAL_HASH LDAP_SERVER LDAP_PORT LDAP_DOMAIN LDAP_BASE_DN LDAP_USER_GROUP
-php <<'PHP' > "${AUTH_CONFIG}"
+php > "${AUTH_CONFIG}" <<'PHP'
 <?php
 $config = [
     'auth_mode' => getenv('AUTH_MODE'),
     'local_admin' => [
-        'enabled' => getenv('AUTH_MODE') === 'local',
-        'username' => getenv('LOCAL_USERNAME'),
+        'enabled'       => getenv('AUTH_MODE') === 'local',
+        'username'      => getenv('LOCAL_USERNAME'),
         'password_hash' => getenv('LOCAL_HASH'),
     ],
     'ldap' => [
-        'server' => getenv('LDAP_SERVER'),
-        'port' => (int) getenv('LDAP_PORT'),
-        'domain' => getenv('LDAP_DOMAIN'),
-        'base_dn' => getenv('LDAP_BASE_DN'),
+        'server'     => getenv('LDAP_SERVER'),
+        'port'       => (int) getenv('LDAP_PORT'),
+        'domain'     => getenv('LDAP_DOMAIN'),
+        'base_dn'    => getenv('LDAP_BASE_DN'),
         'user_group' => getenv('LDAP_USER_GROUP'),
     ],
 ];
@@ -273,8 +286,11 @@ systemctl daemon-reload
 systemctl restart apache2
 
 log_step 11 "Application des permissions"
-chown -R root:www-data "${OPT_DIR}"
-chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts"
+# Racine et scripts : root propriétaire, www-data peut lire mais ne peut rien modifier
+chown root:www-data "${OPT_DIR}"
+chmod 755 "${OPT_DIR}"
+chown -R root:www-data "${OPT_DIR}/scripts" "${OPT_DIR}/wol" 2>/dev/null || true
+chmod 755 "${OPT_DIR}/scripts"
 find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
 if [ -f "${OPT_DIR}/scripts/deploy_ssh.sh" ]; then
     chown root:"${SVC_USER}" "${OPT_DIR}/scripts/deploy_ssh.sh"
@@ -283,27 +299,41 @@ else
     log_warn "deploy_ssh.sh absent : l'envoi de clé ne fonctionnera pas."
 fi
 [ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
-[ -f "${OPT_DIR}/refresh_server.py" ] && chmod 755 "${OPT_DIR}/refresh_server.py" || true
-[ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && chmod 644 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
+[ -f "${OPT_DIR}/refresh_server.py" ] && chmod 755 "${OPT_DIR}/refresh_server.py"
+[ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && find "${OPT_DIR}/lib" -type f -name "*.py" -exec chmod 644 {} +
 [ -f "${OPT_DIR}/update_lstatus.py" ] && chmod 750 "${OPT_DIR}/update_lstatus.py"
+
+# Clé de chiffrement : lisible par neovision et www-data uniquement
 chown "${SVC_USER}:www-data" "${SECRET_KEY_FILE}"
 chmod 640 "${SECRET_KEY_FILE}"
+
+# Données : www-data doit pouvoir écrire (fichiers JSON, temp, historique)
 chown -R www-data:www-data "${OPT_DIR}/data"
 find "${OPT_DIR}/data" -type d -exec chmod 2775 {} +
 find "${OPT_DIR}/data" -type f -exec chmod 664 {} +
-mkdir -p "${OPT_DIR}/history"
-touch "${OPT_DIR}/history/alerts.csv"
-chown -R root:www-data "${OPT_DIR}/history"
-chmod 2770 "${OPT_DIR}/history"
-find "${OPT_DIR}/history" -type f \( -name "*.json" -o -name "*.csv" \) -exec chmod 664 {} +
-for logfile in history.log mailing.log notification.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do
+
+# Historique : même logique que data
+mkdir -p "${OPT_DIR}/data/history"
+touch "${OPT_DIR}/data/history/alerts.csv"
+chown -R www-data:www-data "${OPT_DIR}/data/history"
+find "${OPT_DIR}/data/history" -type f \( -name "*.json" -o -name "*.csv" \) -exec chmod 664 {} +
+
+# Journaux
+for logfile in history.log mailing.log notification.log refresh_server.log save_servers.log \
+    update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log \
+    update_ubuntu.log update_uptime.log update_windows.log; do
     [ -f "${LOG_DIR}/${logfile}" ] || touch "${LOG_DIR}/${logfile}"
 done
 chown -R www-data:www-data "${LOG_DIR}"
 chmod 2775 "${LOG_DIR}"
 chmod 664 "${LOG_DIR}"/*.log 2>/dev/null || true
-chown -R www-data:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
-chmod -R 750 "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
+
+# Interface web : lecture seule pour www-data, Apache doit pouvoir lire
+chown -R root:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
+find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type d -exec chmod 755 {} + 2>/dev/null || true
+find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type f -exec chmod 644 {} + 2>/dev/null || true
+
+# Configuration d'authentification : lecture pour www-data, pas d'écriture
 chown root:www-data "${AUTH_CONFIG}"
 chmod 640 "${AUTH_CONFIG}"
 
@@ -335,6 +365,7 @@ MAILTO=""
 1 0 * * * /opt/supervision/venv/bin/python /opt/supervision/clean_json.py >/dev/null 2>&1
 1 0 1 * * /opt/supervision/venv/bin/python /opt/supervision/clean_history.py >/dev/null 2>&1
 EOF
+# Nettoyage des anciennes tâches NeoVision dans la crontab root
 if crontab -l 2>/dev/null | grep -q '/opt/supervision/'; then
     crontab -l | grep -v '/opt/supervision/' | crontab - || true
     log_info "Anciennes tâches NeoVision retirées de la crontab root."
@@ -356,12 +387,14 @@ chmod 644 /etc/logrotate.d/neovision
 
 log_step 15 "Première collecte"
 if [ -f "${OPT_DIR}/scripts/collect.sh" ]; then
-    bash "${OPT_DIR}/scripts/collect.sh" || log_warn "La première collecte a retourné un code d'avertissement."
+    /usr/bin/sudo -u root bash "${OPT_DIR}/scripts/collect.sh" || log_warn "La première collecte a retourné un code d'avertissement."
 fi
 
 IP_SRV="$(hostname -I | awk '{print $1}')"
 log_step 16 "Installation terminée"
-echo -e "\n${GREEN}======================================================================${NC}\n${GREEN}               NEOVISION EST PRÊT À L'EMPLOI !                       ${NC}\n${GREEN}======================================================================${NC}"
+echo -e "\n${GREEN}======================================================================${NC}"
+echo -e "${GREEN}               NEOVISION EST PRÊT À L'EMPLOI !                        ${NC}"
+echo -e "${GREEN}======================================================================${NC}"
 echo -e " Interface Web : ${CYAN}https://${IP_SRV}/${NC}"
 if [ "${AUTH_CHOICE}" = "1" ]; then
     echo -e " Compte local : ${YELLOW}${LOCAL_USERNAME}${NC} (mot de passe choisi pendant l'installation)"
