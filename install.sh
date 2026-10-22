@@ -285,8 +285,17 @@ if [ ! -f /etc/ssl/certs/ssl-cert-snakeoil.pem ]; then
 fi
 a2dissite 000-default.conf -q 2>/dev/null || true
 a2ensite supervision.conf -q
-rm -f /etc/systemd/system/apache2.service.d/override.conf
-rmdir /etc/systemd/system/apache2.service.d 2>/dev/null || true
+mkdir -p /etc/systemd/system/apache2.service.d
+cat > /etc/systemd/system/apache2.service.d/override.conf <<'EOF'
+[Service]
+InaccessiblePaths=
+InaccessiblePaths=/boot
+InaccessiblePaths=/root
+InaccessiblePaths=-/etc/ssh
+InaccessiblePaths=-/etc/apt
+InaccessiblePaths=-/etc/.git
+InaccessiblePaths=-/etc/.svn
+EOF
 systemctl daemon-reload
 systemctl restart apache2
 
