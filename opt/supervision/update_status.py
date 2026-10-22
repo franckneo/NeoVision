@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/supervision/venv/bin/python
 import json
 import logging
 import time
@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="winrm")
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_local_ssh_key, get_default_local_user
+from lib.servers import get_servers, get_ssh_base_options
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
 from filelock import FileLock, Timeout
@@ -30,8 +30,7 @@ logger.addHandler(handler)
 def get_linux_update_status(ip,user):
     start=time.time()
     try:
-        k=get_local_ssh_key()
-        ssh_base=["ssh","-o","BatchMode=yes","-o","ConnectTimeout=5","-o","StrictHostKeyChecking=accept-new"]+(["-i",k] if k else [])
+        ssh_base=["ssh"]+get_ssh_base_options()
         r1=subprocess.run(ssh_base+[f"{user}@{ip}","test -d /run/needrestart && echo true || echo false"],capture_output=True,text=True,timeout=10)
         reboot_required=r1.stdout.strip()=="true"
         r2=subprocess.run(ssh_base+[f"{user}@{ip}","apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"],capture_output=True,text=True,timeout=30)
@@ -117,8 +116,11 @@ def main():
         }
         try:
             if s_type=="linux":
-                result=run_with_retry(
-                    get_linux_update_status, 2, 2, ip, s.get("user") or get_default_local_user())
+                user=(s.get("user") or "").strip()
+                if not user:
+                    logging.warning(f"[{name}] champ 'user' absent, serveur ignoré")
+                    continue
+                result=run_with_retry(get_linux_update_status, 2, 2, ip, user)
             elif s_type=="windows":
                 pwd=decrypt_password(
                     s.get("enc_password")

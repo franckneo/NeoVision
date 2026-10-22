@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/supervision/venv/bin/python
 import subprocess
 import json
 import os
@@ -8,15 +8,13 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="winrm")
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_local_ssh_key
+from lib.servers import get_servers, get_ssh_base_options
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
 from filelock import FileLock, Timeout
-
 LOCK_FILE = "/opt/supervision/data/update_ram.lock"
 LOG_FILE = "/var/log/supervision/update_ram.log"
 HISTORY_SIZE = 192
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(
@@ -34,8 +32,7 @@ logger.addHandler(handler)
 def get_linux_memory_usage(ip, user):
     start = time.time()
     try:
-        k=get_local_ssh_key()
-        cmd=["ssh","-o","BatchMode=yes","-o","StrictHostKeyChecking=accept-new"]+(["-i",k] if k else [])+[f"{user}@{ip}","free -m | awk 'NR==2{printf \"%.2f\", $3*100/$2}'"]
+        cmd=["ssh"]+get_ssh_base_options()+[f"{user}@{ip}","free -m | awk 'NR==2{printf \"%.2f\", $3*100/$2}'"]
         r = subprocess.run(
             cmd,
             capture_output=True,
@@ -132,13 +129,11 @@ def main():
                 history = []
         try:
             if s_type == "linux":
-                val = run_with_retry(
-                    get_linux_memory_usage,
-                    2,
-                    2,
-                    ip,
-		    s.get("user") or get_default_local_user()
-                )
+                user = (s.get("user") or "").strip()
+                if not user:
+                    logging.warning(f"[{name}] champ 'user' absent, serveur ignoré")
+                    continue
+                val = run_with_retry(get_linux_memory_usage, 2, 2, ip, user)
             elif s_type == "windows":
                 pwd = decrypt_password(
                     s.get("enc_password")

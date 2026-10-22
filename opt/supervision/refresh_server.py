@@ -6,7 +6,7 @@ import logging
 import subprocess
 from datetime import datetime
 import winrm
-from lib.servers import get_servers, get_local_ssh_key, get_default_local_user
+from lib.servers import get_servers, get_ssh_base_options
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
 DATA_DIR = "/opt/supervision/data"
@@ -24,12 +24,7 @@ def write_json(path, data):
         json.dump(data, f, indent=2)
     os.replace(temp, path)
 def get_ssh_cmd(user, ip, command):
-    k = get_local_ssh_key()
-    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=5"]
-    if k and os.path.exists(k):
-        cmd += ["-i", k]
-    cmd += [f"{user}@{ip}", command]
-    return cmd
+    return ["ssh"] + get_ssh_base_options() + [f"{user}@{ip}", command]
 def get_winrm_session(ip, user, password):
     if not password:
         raise RuntimeError("Mot de passe Windows absent")
@@ -246,7 +241,11 @@ def main():
         sys.exit(1)
     ip = server.get("ip")
     server_type = server.get("type")
-    user = server.get("user") or get_default_local_user()
+    user = (server.get("user") or "").strip()
+    if not user:
+        logging.error(f"Champ 'user' absent pour {target_name}")
+        print("Utilisateur manquant")
+        sys.exit(1)
     password = decrypt_password(server.get("enc_password")) if server_type == "windows" and server.get("enc_password") else None
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:

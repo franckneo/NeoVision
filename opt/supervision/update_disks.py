@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/supervision/venv/bin/python
 import subprocess
 import json
 import os
@@ -6,7 +6,7 @@ import logging
 import time
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_local_ssh_key
+from lib.servers import get_servers, get_ssh_base_options
 from filelock import FileLock, Timeout
 from lib.crypto import decrypt_password
 from lib.retry import run_with_retry
@@ -40,8 +40,7 @@ def parse_size_to_gb(size_str):
 def get_linux_disk_and_os(ip, user):
     start = time.time()
     try:
-        k=get_local_ssh_key()
-        cmd=["ssh","-o","StrictHostKeyChecking=accept-new","-o","BatchMode=yes","-o","ConnectTimeout=5"]+(["-i",k] if k else [])+[f"{user}@{ip}","cat /etc/os-release | grep '^PRETTY_NAME=' | cut -d= -f2 | tr -d '\"'; echo '---'; df -BG --output=source,size,pcent | tail -n +2"]
+        cmd=["ssh"]+get_ssh_base_options()+[f"{user}@{ip}","cat /etc/os-release | grep '^PRETTY_NAME=' | cut -d= -f2 | tr -d '\"'; echo '---'; df -BG --output=source,size,pcent | tail -n +2"]
         r = subprocess.run( cmd, capture_output=True, text=True, timeout=10)
         if r.returncode != 0:
             logging.error(f"[{ip}] SSH error: {r.stderr.strip()}")
@@ -131,7 +130,11 @@ def main():
                 history = []
         try:
             if s_type == "linux":
-                disks_res, os_name = run_with_retry( get_linux_disk_and_os, 2, 2, ip, s.get("user") or get_default_local_user())
+                user = (s.get("user") or "").strip()
+                if not user:
+                    logging.warning(f"[{name}] champ 'user' absent, serveur ignoré")
+                    continue
+                disks_res, os_name = run_with_retry(get_linux_disk_and_os, 2, 2, ip, user)
             elif s_type == "windows":
                 pwd = decrypt_password( s.get("enc_password"))
                 disks_res, os_name = run_with_retry( get_windows_disk_and_os, 2, 2, ip, s.get("user"), pwd)
