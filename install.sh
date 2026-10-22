@@ -54,7 +54,7 @@ chmod 700 "${SVC_HOME}/.ssh"
 chown -R "${SVC_USER}:${SVC_USER}" "${SVC_HOME}"
 
 log_step 3 "Création des répertoires, du venv Python et de la clé de chiffrement"
-mkdir -p "${OPT_DIR}"/{data/history,data/temp,scripts,wol} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets}
+mkdir -p "${OPT_DIR}"/{data/history,data/temp} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets}
 if [ ! -d "${OPT_DIR}/venv" ]; then
     python3 -m venv "${OPT_DIR}/venv"
     "${OPT_DIR}/venv/bin/pip" install --upgrade pip -q
@@ -293,7 +293,7 @@ systemctl restart apache2
 log_step 11 "Application des permissions"
 chown root:www-data "${OPT_DIR}"
 chmod 755 "${OPT_DIR}"
-chown -R root:www-data "${OPT_DIR}/scripts" "${OPT_DIR}/wol" 2>/dev/null || true
+find "${OPT_DIR}" -maxdepth 1 -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
 chmod 755 "${OPT_DIR}/scripts"
 find "${OPT_DIR}" -maxdepth 1 -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
 if [ -f "${OPT_DIR}/scripts/deploy_ssh.sh" ]; then
@@ -384,11 +384,6 @@ cat > /etc/logrotate.d/neovision <<'EOF'
 }
 EOF
 chmod 644 /etc/logrotate.d/neovision
-
-log_step 15 "Première collecte"
-if [ -f "${OPT_DIR}/scripts/collect.sh" ]; then
-    /usr/bin/sudo -u root bash "${OPT_DIR}/scripts/collect.sh" || log_warn "La première collecte a retourné un code d'avertissement."
-fi
 
 IP_SRV="$(hostname -I | awk '{print $1}')"
 log_step 16 "Installation terminée"

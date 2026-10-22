@@ -131,6 +131,7 @@ $activeTab = isset($_GET['lang']) ? 'langue' : ($_COOKIE['activeParamView'] ?? '
 $serversJsonPath = '/opt/supervision/data/servers.json';
 $serversRaw = file_exists($serversJsonPath) ? (json_decode(file_get_contents($serversJsonPath), true) ?? []) : [];
 $servers = isset($serversRaw['servers']) && is_array($serversRaw['servers']) ? $serversRaw['servers'] : $serversRaw;
+$accountsJsonPath = '/opt/supervision/data/accounts.json';
 $accountsData = file_exists($accountsJsonPath) ? (json_decode(file_get_contents($accountsJsonPath), true) ?? []) : [];
 $sshAccounts = $accountsData['ssh_accounts'] ?? [];
 $usersPcFile = '/opt/supervision/data/pc/users.json';
@@ -202,11 +203,6 @@ $mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' =
 <div class="accounts-box">
 <h3>⚙️ <?= __('local_supervisor_account', 'Clé SSH de supervision') ?></h3>
 <p>Le compte système <code>neovision</code> et sa clé <code>/var/lib/neovision/.ssh/id_ed25519</code> sont utilisés pour tous les accès SSH.</p>
-<div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
-<button type="button" id="btnCheckSshKey" class="btn btn-blue" style="padding:4px 10px;font-size:12px;">Vérifier clé SSH</button>
-<button type="button" id="btnGenSshKey" class="btn btn-red" style="padding:4px 10px;font-size:12px;">Générer clé SSH (ed25519)</button>
-<span id="sshKeyStatus" style="font-size:12px;"></span>
-</div>
 </div>
 </div>
 <h3>🐧 <?= __('ssh_accounts_title', 'Comptes SSH (Ubuntu / Linux)') ?></h3>
