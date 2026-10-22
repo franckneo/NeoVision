@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="winrm")
 import winrm
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_local_ssh_key, get_default_local_user
+from lib.servers import get_servers, get_ssh_base_options
 from lib.retry import run_with_retry
 from lib.crypto import decrypt_password
 from filelock import FileLock, Timeout
@@ -35,8 +35,7 @@ def format_uptime(seconds):
 
 def get_linux_uptime(ip, user):
     try:
-        k = get_local_ssh_key()
-        cmd = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"] + (["-i", k] if k else []) + [f"{user}@{ip}", "cat /proc/uptime"]
+        cmd = ["ssh"] + get_ssh_base_options() + [f"{user}@{ip}", "cat /proc/uptime"]
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         if r.returncode != 0:
             logging.error(f"[LINUX][{ip}] SSH error: {r.stderr.strip()}")
@@ -105,9 +104,10 @@ def main():
         }
         result = None
         if srv_type == "linux":
-            result = run_with_retry(
-                get_linux_uptime, 2, 2, ip, user if user else get_default_local_user()
-            )
+            if not (user or "").strip():
+                logging.warning(f"{name}: champ 'user' absent, serveur ignoré")
+            else:
+                result = run_with_retry(get_linux_uptime, 2, 2, ip, user.strip())
         elif srv_type == "windows":
             pwd = decrypt_password(s.get("enc_password"))
             result = run_with_retry(

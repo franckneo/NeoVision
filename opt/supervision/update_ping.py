@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/supervision/venv/bin/python
 import json
 import subprocess
 import os
