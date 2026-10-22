@@ -333,12 +333,6 @@ find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type d -e
 find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type f -exec chmod 644 {} + 2>/dev/null || true
 chown root:www-data "${AUTH_CONFIG}"
 chmod 640 "${AUTH_CONFIG}"
-if [ -f "${OPT_DIR}/deploy_ssh.sh" ]; then
-    chown root:"${SVC_USER}" "${OPT_DIR}/deploy_ssh.sh"
-    chmod 750 "${OPT_DIR}/deploy_ssh.sh"
-else
-    log_warn "deploy_ssh.sh absent : l'envoi de clé ne fonctionnera pas."
-fi
 
 log_step 12 "Configuration de Sudoers"
 cat > "${SUDOERS_FILE}" <<'EOF'
