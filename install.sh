@@ -294,7 +294,7 @@ chown root:www-data "${OPT_DIR}"
 chmod 755 "${OPT_DIR}"
 chown -R root:www-data "${OPT_DIR}/scripts" "${OPT_DIR}/wol" 2>/dev/null || true
 chmod 755 "${OPT_DIR}/scripts"
-find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
+find "${OPT_DIR}" -maxdepth 1 -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
 if [ -f "${OPT_DIR}/scripts/deploy_ssh.sh" ]; then
     chown root:"${SVC_USER}" "${OPT_DIR}/scripts/deploy_ssh.sh"
     chmod 750 "${OPT_DIR}/scripts/deploy_ssh.sh"
@@ -332,14 +332,17 @@ find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type d -e
 find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type f -exec chmod 644 {} + 2>/dev/null || true
 chown root:www-data "${AUTH_CONFIG}"
 chmod 640 "${AUTH_CONFIG}"
+if [ -f "${OPT_DIR}/deploy_ssh.sh" ]; then
+    chown root:"${SVC_USER}" "${OPT_DIR}/deploy_ssh.sh"
+    chmod 750 "${OPT_DIR}/deploy_ssh.sh"
+else
+    log_warn "deploy_ssh.sh absent : l'envoi de clé ne fonctionnera pas."
+fi
 
 log_step 12 "Configuration de Sudoers"
 cat > "${SUDOERS_FILE}" <<'EOF'
-# Déploiement de la clé SSH : exécuté uniquement en tant que "neovision"
-www-data ALL=(neovision) NOPASSWD: /opt/supervision/scripts/deploy_ssh.sh
-# Scripts de collecte / historique (root requis pour fping/ICMP, etc.)
-www-data ALL=(root) NOPASSWD: /opt/supervision/scripts/collect.sh
-www-data ALL=(root) NOPASSWD: /opt/supervision/scripts/history.sh
+www-data ALL=(neovision) NOPASSWD: /opt/supervision/deploy_ssh.sh
+www-data ALL=(root) NOPASSWD: /opt/supervision/history/history.sh
 www-data ALL=(root) NOPASSWD: /usr/bin/fping
 www-data ALL=(root) NOPASSWD: /usr/bin/wakeonlan
 www-data ALL=(root) NOPASSWD: /opt/supervision/venv/bin/python /opt/supervision/refresh_server.py *
