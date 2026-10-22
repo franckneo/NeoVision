@@ -1,5 +1,4 @@
 const t=(k,def)=>window.I18N&&window.I18N[k]?window.I18N[k]:def;
-const sshKeyStatus=document.getElementById('sshKeyStatus'),btnCheckSshKey=document.getElementById('btnCheckSshKey'),btnGenSshKey=document.getElementById('btnGenSshKey');
 async function sshKeyAction(action){
 if(sshKeyStatus)sshKeyStatus.textContent='Vérification...';
 try{
@@ -9,15 +8,6 @@ if(sshKeyStatus)sshKeyStatus.textContent=data.exists?'Clé présente : '+data.ke
 }catch(e){if(sshKeyStatus)sshKeyStatus.textContent='Erreur : '+e.message;}
 }
 if(btnCheckSshKey)btnCheckSshKey.onclick=()=>sshKeyAction('check_ssh_key');
-if(btnGenSshKey)btnGenSshKey.onclick=async()=>{
-if(!confirm('Générer une nouvelle clé SSH si aucune clé n’existe ?'))return;
-if(sshKeyStatus)sshKeyStatus.textContent='Génération...';
-try{
-const res=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'generate_ssh_key'})}),data=await res.json();
-if(!data.success)throw new Error(data.error||'Erreur');
-if(sshKeyStatus)sshKeyStatus.textContent='Clé générée : '+data.key;
-}catch(e){if(sshKeyStatus)sshKeyStatus.textContent='Erreur : '+e.message;}
-};
 const wolModal=document.getElementById('wolModal'),btnOpenAddWolModal=document.getElementById('btnOpenAddWolModal'),btnCloseWolModal=document.getElementById('btnCloseWolModal'),btnCloseWolModalX=document.getElementById('btnCloseWolModalX'),btnDeployWol=document.getElementById('btnDeployWol'),wolConsole=document.getElementById('wolConsole');
 if(btnOpenAddWolModal){btnOpenAddWolModal.onclick=()=>{document.getElementById('wolInputName').value='';document.getElementById('wolInputIp').value='';document.getElementById('wolInputSubnets').value='';document.getElementById('wolInputPassword').value='';const u=document.getElementById('wolInputUser');if(u)u.value='';wolConsole.textContent=t('wol_console_ready',"Prêt. Remplissez les informations et cliquez sur 'Déployer le relais'.");btnDeployWol.disabled=false;wolModal.classList.remove('view-hidden');wolModal.style.display='flex';};}
 const hideWol=()=>{if(wolModal){wolModal.classList.add('view-hidden');wolModal.style.display='none';}};

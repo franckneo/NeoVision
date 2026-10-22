@@ -47,41 +47,6 @@ PY;
     return ['ok' => true, 'value' => $encOut];
 }
 
-if ($action === 'check_ssh_key') {
-    $pubFile = '/var/lib/neovision/.ssh/id_ed25519.pub';
-    $exists  = is_file($pubFile) && is_readable($pubFile);
-    $key     = $exists ? trim((string)file_get_contents($pubFile)) : '';
-    echo json_encode(['success' => true, 'exists' => $exists && $key !== '', 'key' => $key]);
-    exit();
-}
-
-if ($action === 'generate_ssh_key') {
-    $keyFile = '/var/lib/neovision/.ssh/id_ed25519';
-    if (is_file($keyFile) || is_file($keyFile . '.pub')) {
-        echo json_encode(['success' => false, 'error' => 'Une clé existe déjà. Vérifiez-la avant toute régénération.']);
-        exit();
-    }
-    $cmd = ['/usr/bin/sudo', '-n', '-u', 'neovision', '/usr/bin/ssh-keygen', '-t', 'ed25519', '-N', '', '-f', $keyFile, '-C', 'neovision@' . gethostname()];
-    $proc = proc_open($cmd, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-    if (!is_resource($proc)) {
-        echo json_encode(['success' => false, 'error' => 'Impossible de lancer ssh-keygen.']);
-        exit();
-    }
-    fclose($pipes[0]);
-    $out = stream_get_contents($pipes[1]);
-    $err = stream_get_contents($pipes[2]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-    $code = proc_close($proc);
-    $pubFile = $keyFile . '.pub';
-    if ($code !== 0 || !is_file($pubFile) || !is_readable($pubFile)) {
-        echo json_encode(['success' => false, 'error' => trim($err ?: $out) ?: 'Échec de génération de la clé.']);
-        exit();
-    }
-    echo json_encode(['success' => true, 'key' => trim(file_get_contents($pubFile))]);
-    exit();
-}
-
 if ($action === 'encrypt_pwd') {
     $pwd = (string)($input['password'] ?? '');
     if ($pwd === '') {

@@ -200,10 +200,6 @@ $mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' =
 <button type="button" id="btnSaveAccounts" class="btn btn-red"><?= __('btn_save', 'Enregistrer') ?></button>
 </div>
 <p><?= __('accounts_desc', 'Définissez les comptes utilisés pour déployer les clés SSH et pour la connexion WinRM aux serveurs Windows.') ?></p>
-<div class="accounts-box">
-<h3>⚙️ <?= __('local_supervisor_account', 'Clé SSH de supervision') ?></h3>
-<p>Le compte système <code>neovision</code> et sa clé <code>/var/lib/neovision/.ssh/id_ed25519</code> sont utilisés pour tous les accès SSH.</p>
-</div>
 </div>
 <h3>🐧 <?= __('ssh_accounts_title', 'Comptes SSH (Ubuntu / Linux)') ?></h3>
 <table class="table-servers-config" id="tableSshAccounts">
