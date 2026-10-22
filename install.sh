@@ -49,7 +49,6 @@ if ! id -u "${SVC_USER}" &>/dev/null; then
 else
     log_info "Utilisateur ${SVC_USER} déjà présent."
 fi
-usermod -aG www-data "${SVC_USER}"
 mkdir -p "${SVC_HOME}/.ssh"
 chmod 700 "${SVC_HOME}/.ssh"
 chown -R "${SVC_USER}:${SVC_USER}" "${SVC_HOME}"
@@ -90,8 +89,10 @@ a2enmod rewrite ssl headers -q
 sed -i 's/^session.gc_maxlifetime = .*/session.gc_maxlifetime = 28800/' /etc/php/*/*/php.ini 2>/dev/null || true
 echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf
 a2enconf servername -q
-echo "pcre.jit=0" > /etc/php/*/mods-available/pcre-jit.ini 2>/dev/null || true
-phpenmod pcre-jit 2>/dev/null || true
+for d in /etc/php/*/mods-available; do
+    echo "pcre.jit=0" > "$d/pcre-jit.ini"
+done
+phpenmod pcre-jit
 
 log_step 6 "Déploiement du backend"
 if [ -d "${SCRIPT_DIR}/opt/supervision" ]; then
