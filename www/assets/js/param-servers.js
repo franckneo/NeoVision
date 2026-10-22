@@ -1,12 +1,12 @@
 const t=(k,def)=>window.I18N&&window.I18N[k]?window.I18N[k]:def;
 const wolModal=document.getElementById('wolModal'),btnOpenAddWolModal=document.getElementById('btnOpenAddWolModal'),btnCloseWolModal=document.getElementById('btnCloseWolModal'),btnCloseWolModalX=document.getElementById('btnCloseWolModalX'),btnDeployWol=document.getElementById('btnDeployWol'),wolConsole=document.getElementById('wolConsole');
-if(btnOpenAddWolModal){btnOpenAddWolModal.onclick=()=>{document.getElementById('wolInputName').value='';document.getElementById('wolInputIp').value='';document.getElementById('wolInputSubnets').value='';document.getElementById('wolInputPassword').value='';wolConsole.textContent=t('wol_console_ready',"Prêt. Remplissez les informations et cliquez sur 'Déployer le relais'.");btnDeployWol.disabled=false;wolModal.classList.remove('view-hidden');wolModal.style.display='flex';};}
+if(btnOpenAddWolModal){btnOpenAddWolModal.onclick=()=>{document.getElementById('wolInputName').value='';document.getElementById('wolInputIp').value='';document.getElementById('wolInputSubnets').value='';document.getElementById('wolInputPassword').value='';const u=document.getElementById('wolInputUser');if(u)u.value='';wolConsole.textContent=t('wol_console_ready',"Prêt. Remplissez les informations et cliquez sur 'Déployer le relais'.");btnDeployWol.disabled=false;wolModal.classList.remove('view-hidden');wolModal.style.display='flex';};}
 const hideWol=()=>{if(wolModal){wolModal.classList.add('view-hidden');wolModal.style.display='none';}};
 if(btnCloseWolModal)btnCloseWolModal.onclick=hideWol;
 if(btnCloseWolModalX)btnCloseWolModalX.onclick=hideWol;
 if(btnDeployWol){
 btnDeployWol.onclick=async()=>{
-const name=document.getElementById('wolInputName').value.trim(),ip=document.getElementById('wolInputIp').value.trim(),subnets=document.getElementById('wolInputSubnets').value.trim(),remote_user=document.getElementById('wolInputUser').value.trim(),password=document.getElementById('wolInputPassword').value;
+const name=document.getElementById('wolInputName').value.trim(),ip=document.getElementById('wolInputIp').value.trim(),subnets=document.getElementById('wolInputSubnets').value.trim(),remote_user=(document.getElementById('wolInputUser')?.value||'').trim(),password=document.getElementById('wolInputPassword').value;
 if(!ip||!remote_user||!password){alert(t('alert_fill_wol_fields',"Veuillez remplir l'IP, le compte et le mot de passe distant."));return;}
 btnDeployWol.disabled=true;
 wolConsole.textContent="[1/3] "+t('log_ssh_deploy_start',"Connexion SSH et déploiement de la clé...")+"\n";
@@ -49,7 +49,7 @@ const tbody=document.querySelector('#tableServers tbody'),tr=document.createElem
 tr.className='server-row';
 tr.dataset.originalName='';
 tr.dataset.encPassword='';
-tr.innerHTML=`<td><input type="text" class="input-srv-name" placeholder="ex: SRV-AD-1"></td><td><input type="text" class="input-srv-ip" placeholder="ex: 192.168.0.11"></td><td><select class="server-type-select input-srv-type"><option value="windows" selected>Windows</option><option value="linux">Linux</option></select></td><td><input type="text" class="input-srv-user" placeholder="ex: user\\\\admin"></td><td class="col-action"><button type="button" class="btn btn-sm btn-blue btn-win-pwd">🔑 ${t('btn_pwd','MDP')}</button></td><td style="text-align:center;"><button type="button" class="btn btn-sm btn-blue btn-test-conn">${t('btn_test','Tester')}</button></td><td style="text-align:center; white-space:nowrap;"><button type="button" class="btn-order btn-move-up" title="${t('action_move_up','Monter')}">▲</button><button type="button" class="btn-order btn-move-down" title="${t('action_move_down','Descendre')}">▼</button></td><td style="text-align:center;"><button type="button" class="btn-trash btn-delete-srv" title="${t('action_delete','Supprimer')}">🗑️</button></td>`;
+tr.innerHTML=`<td><input type="text" class="input-srv-name" placeholder="ex: SRV-AD-1"></td><td><input type="text" class="input-srv-ip" placeholder="ex: 192.168.0.11"></td><td><select class="server-type-select input-srv-type"><option value="windows" selected>Windows</option><option value="linux">Linux</option></select></td><td><input type="text" class="input-srv-user" placeholder="ex: DOMAINE\\admin"></td><td class="col-action"><button type="button" class="btn btn-sm btn-blue btn-win-pwd">🔑 ${t('btn_pwd','MDP')}</button></td><td style="text-align:center;"><button type="button" class="btn btn-sm btn-blue btn-test-conn">${t('btn_test','Tester')}</button></td><td style="text-align:center; white-space:nowrap;"><button type="button" class="btn-order btn-move-up" title="${t('action_move_up','Monter')}">▲</button><button type="button" class="btn-order btn-move-down" title="${t('action_move_down','Descendre')}">▼</button></td><td style="text-align:center;"><button type="button" class="btn-trash btn-delete-srv" title="${t('action_delete','Supprimer')}">🗑️</button></td>`;
 tbody.appendChild(tr);
 });
 document.addEventListener('change',e=>{
@@ -127,40 +127,6 @@ if(user)currentWinRow.querySelector('.input-srv-user').value=user;
 if(pwd){try{const res=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'encrypt_pwd',password:pwd})}),data=await res.json();if(data.success){currentWinRow.dataset.encPassword=data.enc_password;alert(t('alert_pwd_encrypted','Mot de passe chiffré et mis à jour pour ce serveur.'));}else{alert(t('msg_error','Erreur : ')+data.error);}}catch(err){alert(t('msg_network_error','Erreur réseau'));}}
 closeWinModal();
 };
-document.getElementById('btnCheckSshKey')?.addEventListener('click',async()=>{
-const st=document.getElementById('sshKeyStatus');
-if(st){st.textContent='Vérification...';st.style.color='#fff';}
-try{
-const res=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_ssh_key'})}),data=await res.json();
-if(!data.success){
-        if(st){st.textContent=data.error||'Erreur';st.style.color='#f85149';}
-        return;
-}
-if(st){
-        st.textContent=data.exists?'Clé présente':'Aucune clé';st.style.color=data.exists?'#3fb950':'#d29922';
-}
-}
-catch(e){
-        if(st){
-                st.textContent='Erreur réseau';st.style.color='#f85149';
-        }
-}
-});
-document.getElementById('btnGenSshKey')?.addEventListener('click',async()=>{
-const st=document.getElementById('sshKeyStatus');
-let force=false;
-try{
-const cRes=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_ssh_key'})}),cData=await cRes.json();
-if(cData.exists&&!confirm("Une clé existe déjà. Voulez-vous l'écraser ?"))return;
-force=!!cData.exists;
-}catch(e){return;}
-if(st){st.textContent='Génération...';st.style.color='#fff';}
-try{
-const res=await fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'generate_ssh_key',force:force})}),data=await res.json();
-if(data.success){if(st){st.textContent='Clé générée avec succès';st.style.color='#3fb950';}}
-else{if(st){st.textContent=data.error||'Erreur génération';st.style.color='#f85149';}}
-}catch(e){if(st){st.textContent='Erreur réseau';st.style.color='#f85149';}}
-});
 const sshModal=document.getElementById("sshModal"),sshConsole=document.getElementById("sshConsole"),sshTargetSpan=document.getElementById("sshModalTarget"),sshIpInput=document.getElementById("sshInputIp"),sshUserInput=document.getElementById("sshInputUser"),sshPassInput=document.getElementById("sshInputPassword"),sshProfileSelect=document.getElementById("sshProfileSelect"),btnRunSsh=document.getElementById("btnRunSsh");
 let currentSshRow=null;
 document.addEventListener('click',e=>{
@@ -168,7 +134,7 @@ const btn=e.target.closest('.btn-ssh-key');
 if(btn&&sshModal){
 currentSshRow=btn.closest('tr');
 const ip=currentSshRow.querySelector('.input-srv-ip').value.trim(),user=currentSshRow.querySelector('.input-srv-user').value.trim(),srvName=currentSshRow.querySelector('.input-srv-name').value.trim();
-sshTargetSpan.textContent=srvName||ip;sshIpInput.value=ip;sshUserInput.value=user;sshProfileSelect.value=user||'';sshPassInput.value='';
+sshTargetSpan.textContent=srvName||ip;sshIpInput.value=ip;sshUserInput.value=user;if(sshProfileSelect)sshProfileSelect.value=user||'';sshPassInput.value='';
 sshConsole.textContent=t('ssh_console_ready',"Prêt. Entrez le mot de passe distant et cliquez sur 'Déployer la clé'.");
 sshModal.classList.remove('view-hidden');sshModal.classList.add('active');sshModal.style.display='flex';
 }
