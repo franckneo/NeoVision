@@ -6,13 +6,11 @@ import subprocess
 from datetime import datetime
 from filelock import FileLock, Timeout
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_ssh_base_options, DEFAULT_REMOTE_USER
+from lib.servers import get_servers, get_ssh_base_options
 from lib.retry import run_with_retry
-
 STATUS_FILE="/opt/supervision/data/update_status.json"
 LOCK_FILE="/opt/supervision/data/update_lstatus.lock"
 LOG_FILE="/var/log/supervision/update_lstatus.log"
-
 logger=logging.getLogger()
 logger.setLevel(logging.INFO)
 handler=RotatingFileHandler(LOG_FILE,maxBytes=5*1024*1024,backupCount=1)

@@ -89,39 +89,6 @@ else
 fi
 [ ! -f "${OPT_DIR}/update_lstatus.py" ] && touch "${OPT_DIR}/update_lstatus.py"
 
-log_step 7 "Création du script de déploiement de clé SSH"
-cat > "${OPT_DIR}/scripts/deploy_ssh.sh" <<'EOF'
-#!/usr/bin/env bash
-# Déploie la clé publique neovision vers une machine cible.
-# Usage : deploy_ssh.sh <ip> <utilisateur>
-# Le mot de passe de l'utilisateur cible est lu sur l'entrée standard (jamais en argument).
-# Exécuté en tant que "neovision" via sudo depuis www-data.
-set -eo pipefail
-
-TARGET_IP="${1:-}"
-TARGET_USER="${2:-}"
-PUBKEY="/var/lib/neovision/.ssh/id_ed25519.pub"
-
-# Validation stricte IPv4
-if ! [[ "${TARGET_IP}" =~ ^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$ ]]; then
-    echo "IP invalide" >&2; exit 2
-fi
-# Validation stricte du nom d'utilisateur (POSIX, 1 à 32 caractères)
-if ! [[ "${TARGET_USER}" =~ ^[a-zA-Z_][a-zA-Z0-9_.-]{0,31}$ ]]; then
-    echo "Utilisateur invalide" >&2; exit 3
-fi
-[ -f "${PUBKEY}" ] || { echo "Clé publique introuvable" >&2; exit 4; }
-
-IFS= read -r -s SSHPASS || true
-[ -n "${SSHPASS:-}" ] || { echo "Mot de passe manquant sur stdin" >&2; exit 5; }
-export SSHPASS
-
-sshpass -e ssh-copy-id -i "${PUBKEY}" \
-    -o StrictHostKeyChecking=accept-new \
-    -o ConnectTimeout=10 \
-    -- "${TARGET_USER}@${TARGET_IP}"
-EOF
-
 log_step 8 "Initialisation des fichiers JSON"
 if [ ! -f "${OPT_DIR}/data/config.json" ]; then
     cat > "${OPT_DIR}/data/config.json" <<'EOF'
