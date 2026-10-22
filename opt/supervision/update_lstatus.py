@@ -6,7 +6,7 @@ import subprocess
 from datetime import datetime
 from filelock import FileLock, Timeout
 from logging.handlers import RotatingFileHandler
-from lib.servers import get_servers, get_local_ssh_key, get_default_local_user
+from lib.servers import get_servers, get_ssh_base_options, DEFAULT_REMOTE_USER
 from lib.retry import run_with_retry
 
 STATUS_FILE="/opt/supervision/data/update_status.json"
@@ -30,13 +30,13 @@ def write_status(data):
 
 def get_linux_update_status(ip,user):
     try:
-        k=get_local_ssh_key()
-        ssh_base=["ssh","-o","BatchMode=yes","-o","StrictHostKeyChecking=accept-new"]+(["-i",k] if k else [])
-        reboot_cmd=ssh_base+[f"{user}@{ip}","test -d /run/needrestart && echo true || echo false"]
-        r1=subprocess.run(reboot_cmd,capture_output=True,text=True,timeout=10)
+        ssh_base=["ssh"]+get_ssh_base_options()
+        target=f"{user}@{ip}"
+        r1=subprocess.run(ssh_base+[target,"test -d /run/needrestart && echo true || echo false"],
+                          capture_output=True,text=True,timeout=10)
         reboot_required=r1.stdout.strip()=="true"
-        update_cmd=ssh_base+[f"{user}@{ip}","apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"]
-        r2=subprocess.run(update_cmd,capture_output=True,text=True,timeout=30)
+        r2=subprocess.run(ssh_base+[target,"apt list --upgradable 2>/dev/null | tail -n +2 | wc -l"],
+                          capture_output=True,text=True,timeout=30)
         try:
             updates_pending=int(r2.stdout.strip())
         except Exception:
@@ -61,7 +61,7 @@ def main():
             ip=s.get("ip")
             logging.info(f"--- {name} [{ip}] ---")
             status={"updates_pending":0,"reboot_required":False}
-            result=run_with_retry(get_linux_update_status,2,2,ip,s.get("user") or get_default_local_user())
+            result=run_with_retry(get_linux_update_status,2,2,ip,s.get("user") or DEFAULT_REMOTE_USER)
             if isinstance(result,dict) and "error" not in result:
                 status=result
             path=f"/opt/supervision/data/{name}_status.json"

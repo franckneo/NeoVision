@@ -6,11 +6,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPT_DIR="/opt/supervision"
 WWW_DIR="/var/www"
 LOG_DIR="/var/log/supervision"
+SVC_USER="neovision"
+SVC_HOME="/var/lib/neovision"
 APACHE_CONF="/etc/apache2/sites-available/supervision.conf"
 SUDOERS_FILE="/etc/sudoers.d/supervision"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
-
 log_step() { echo -e "\n${BLUE}======================================================================${NC}\n${CYAN}[ÉTAPE $1]${NC} $2\n${BLUE}======================================================================${NC}"; }
 log_info() { echo -e "${GREEN}[+]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[!]${NC} $1"; }
@@ -25,11 +26,22 @@ log_info "Exécution sous root. Source : ${SCRIPT_DIR}"
 log_step 1 "Installation des dépendances"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography python3-venv python3-pip openssl sudo logrotate ssl-cert  iputils-ping cifs-utils
+apt-get install -y apache2 cron php-ldap libapache2-mod-php php php-cli php-curl php-mbstring php-xml php-ssh2 jq curl fping wakeonlan openssh-client sshpass python3-cryptography python3-venv python3-pip openssl sudo logrotate ssl-cert iputils-ping cifs-utils
 
-log_step 2 "Création des répertoires, du venv Python et de la clé de chiffrement"
-mkdir -p "${OPT_DIR}"/{data/history,data/temp,scripts,wol} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets} /root/.ssh
-chmod 700 /root/.ssh
+log_step 2 "Création de l'utilisateur de service"
+if ! id -u "${SVC_USER}" &>/dev/null; then
+    useradd --system --shell /usr/sbin/nologin --home-dir "${SVC_HOME}" --create-home "${SVC_USER}"
+    log_info "Utilisateur ${SVC_USER} créé."
+else
+    log_info "Utilisateur ${SVC_USER} déjà présent."
+fi
+usermod -aG www-data "${SVC_USER}"
+mkdir -p "${SVC_HOME}/.ssh"
+chmod 700 "${SVC_HOME}/.ssh"
+chown -R "${SVC_USER}:${SVC_USER}" "${SVC_HOME}"
+
+log_step 3 "Création des répertoires, du venv Python et de la clé de chiffrement"
+mkdir -p "${OPT_DIR}"/{data/history,data/temp,scripts,wol} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets}
 if [ ! -d "${OPT_DIR}/venv" ]; then
     python3 -m venv "${OPT_DIR}/venv"
     "${OPT_DIR}/venv/bin/pip" install --upgrade pip -q
@@ -38,27 +50,34 @@ if [ ! -d "${OPT_DIR}/venv" ]; then
 fi
 SECRET_KEY_FILE="${OPT_DIR}/secret.key"
 if [ ! -s "${SECRET_KEY_FILE}" ]; then
-    umask 077
-    "${OPT_DIR}/venv/bin/python3" -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" > "${SECRET_KEY_FILE}"
+    (
+        umask 077
+        "${OPT_DIR}/venv/bin/python3" -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" > "${SECRET_KEY_FILE}"
+    )
     log_info "Clé de chiffrement créée."
 else
     log_info "Clé de chiffrement existante conservée."
 fi
-chown root:www-data "${SECRET_KEY_FILE}"
+chown "${SVC_USER}:www-data" "${SECRET_KEY_FILE}"
 chmod 640 "${SECRET_KEY_FILE}"
 
-log_step 3 "Configuration de la clé SSH"
-if [ ! -f /root/.ssh/id_rsa ] && [ ! -f /root/.ssh/id_ed25519 ]; then
-    ssh-keygen -t ed25519 -N "" -f /root/.ssh/id_ed25519 -C "neovision-collector@$(hostname)"
+log_step 4 "Configuration de la clé SSH du compte ${SVC_USER}"
+if [ ! -f "${SVC_HOME}/.ssh/id_ed25519" ]; then
+    sudo -u "${SVC_USER}" ssh-keygen -t ed25519 -N "" -f "${SVC_HOME}/.ssh/id_ed25519" -C "neovision@$(hostname)"
+    log_info "Clé SSH générée dans ${SVC_HOME}/.ssh."
 else
-    log_info "Une clé SSH existe déjà dans /root/.ssh."
+    log_info "Clé SSH existante conservée."
 fi
+chown -R "${SVC_USER}:${SVC_USER}" "${SVC_HOME}/.ssh"
+chmod 700 "${SVC_HOME}/.ssh"
+chmod 600 "${SVC_HOME}/.ssh/id_ed25519"
+chmod 644 "${SVC_HOME}/.ssh/id_ed25519.pub"
 
-log_step 4 "Activation des modules Apache"
+log_step 5 "Activation des modules Apache"
 a2enmod rewrite ssl headers -q
 sed -i 's/^session.gc_maxlifetime = .*/session.gc_maxlifetime = 28800/' /etc/php/*/*/php.ini 2>/dev/null || true
 
-log_step 5 "Déploiement du backend"
+log_step 6 "Déploiement du backend"
 if [ -d "${SCRIPT_DIR}/opt/supervision" ]; then
     cp -r "${SCRIPT_DIR}/opt/supervision/"* "${OPT_DIR}/" 2>/dev/null || true
 elif [ -d "${SCRIPT_DIR}/opt-supervision" ]; then
@@ -68,9 +87,42 @@ elif [ -d "${SCRIPT_DIR}/opt" ]; then
 else
     log_warn "Aucun répertoire source du backend trouvé."
 fi
-[ ! -f "${OPT_DIR}/update_lstatus.py" ] && touch "${OPT_DIR}/update_lstatus.py" && chmod 750 "${OPT_DIR}/update_lstatus.py" && chown root:www-data "${OPT_DIR}/update_lstatus.py"
+[ ! -f "${OPT_DIR}/update_lstatus.py" ] && touch "${OPT_DIR}/update_lstatus.py"
 
-log_step 6 "Initialisation des fichiers JSON"
+log_step 7 "Création du script de déploiement de clé SSH"
+cat > "${OPT_DIR}/scripts/deploy_ssh.sh" <<'EOF'
+#!/usr/bin/env bash
+# Déploie la clé publique neovision vers une machine cible.
+# Usage : deploy_ssh.sh <ip> <utilisateur>
+# Le mot de passe de l'utilisateur cible est lu sur l'entrée standard (jamais en argument).
+# Exécuté en tant que "neovision" via sudo depuis www-data.
+set -eo pipefail
+
+TARGET_IP="${1:-}"
+TARGET_USER="${2:-}"
+PUBKEY="/var/lib/neovision/.ssh/id_ed25519.pub"
+
+# Validation stricte IPv4
+if ! [[ "${TARGET_IP}" =~ ^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$ ]]; then
+    echo "IP invalide" >&2; exit 2
+fi
+# Validation stricte du nom d'utilisateur (POSIX, 1 à 32 caractères)
+if ! [[ "${TARGET_USER}" =~ ^[a-zA-Z_][a-zA-Z0-9_.-]{0,31}$ ]]; then
+    echo "Utilisateur invalide" >&2; exit 3
+fi
+[ -f "${PUBKEY}" ] || { echo "Clé publique introuvable" >&2; exit 4; }
+
+IFS= read -r -s SSHPASS || true
+[ -n "${SSHPASS:-}" ] || { echo "Mot de passe manquant sur stdin" >&2; exit 5; }
+export SSHPASS
+
+sshpass -e ssh-copy-id -i "${PUBKEY}" \
+    -o StrictHostKeyChecking=accept-new \
+    -o ConnectTimeout=10 \
+    -- "${TARGET_USER}@${TARGET_IP}"
+EOF
+
+log_step 8 "Initialisation des fichiers JSON"
 if [ ! -f "${OPT_DIR}/data/config.json" ]; then
     cat > "${OPT_DIR}/data/config.json" <<'EOF'
 {
@@ -102,13 +154,8 @@ if [ ! -f "${OPT_DIR}/data/servers.json" ]; then
 EOF
 fi
 
-if [ ! -f "${OPT_DIR}/data/wol.json" ]; then
-    printf '{\n    "devices": []\n}\n' > "${OPT_DIR}/data/wol.json"
-fi
-
-if [ ! -f "${OPT_DIR}/data/alert_config.json" ]; then
-    echo "{}" > "${OPT_DIR}/data/alert_config.json"
-fi
+[ -f "${OPT_DIR}/data/wol.json" ] || printf '{\n    "devices": []\n}\n' > "${OPT_DIR}/data/wol.json"
+[ -f "${OPT_DIR}/data/alert_config.json" ] || echo "{}" > "${OPT_DIR}/data/alert_config.json"
 
 if [ ! -f "${OPT_DIR}/data/update_status.json" ]; then
     cat > "${OPT_DIR}/data/update_status.json" <<'EOF'
@@ -122,7 +169,7 @@ if [ ! -f "${OPT_DIR}/data/update_status.json" ]; then
 EOF
 fi
 
-log_step 7 "Déploiement de l'interface web"
+log_step 9 "Déploiement de l'interface web"
 if [ -d "${SCRIPT_DIR}/var-www" ]; then
     cp -r "${SCRIPT_DIR}/var-www/"* "${WWW_DIR}/"
 elif [ -d "${SCRIPT_DIR}/www" ]; then
@@ -131,10 +178,10 @@ else
     log_warn "Aucun répertoire source de l'interface web trouvé."
 fi
 mkdir -p "${WWW_DIR}/supervision/api"
-ln -sf "${OPT_DIR}/data" "${WWW_DIR}/supervision/api/data"
-ln -sf "${OPT_DIR}/data" "${WWW_DIR}/supervision/data"
+ln -sfn "${OPT_DIR}/data" "${WWW_DIR}/supervision/api/data"
+ln -sfn "${OPT_DIR}/data" "${WWW_DIR}/supervision/data"
 
-log_step 8 "Configuration de l'authentification"
+log_step 10 "Configuration de l'authentification"
 AUTH_CONFIG="${WWW_DIR}/common/auth_config.json"
 echo "Mode d'authentification :"
 echo "  1) Compte local"
@@ -198,9 +245,8 @@ $config = [
 echo json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), PHP_EOL;
 PHP
 unset AUTH_MODE LOCAL_HASH LDAP_SERVER LDAP_PORT LDAP_DOMAIN LDAP_BASE_DN LDAP_USER_GROUP
-chmod 640 "${AUTH_CONFIG}"
 
-log_step 9 "Configuration du VirtualHost Apache"
+log_step 11 "Configuration du VirtualHost Apache"
 if [ -f "${SCRIPT_DIR}/etc-apache2/sites-available/supervision.conf" ]; then
     cp "${SCRIPT_DIR}/etc-apache2/sites-available/supervision.conf" "${APACHE_CONF}"
 elif [ -f "${SCRIPT_DIR}/apache/supervision.conf" ]; then
@@ -254,32 +300,33 @@ if [ ! -f /etc/ssl/certs/ssl-cert-snakeoil.pem ]; then
 fi
 a2dissite 000-default.conf -q 2>/dev/null || true
 a2ensite supervision.conf -q
-mkdir -p /etc/systemd/system/apache2.service.d
-cat > /etc/systemd/system/apache2.service.d/override.conf <<'EOF'
-[Service]
-ProtectHome=false
-InaccessiblePaths=
-EOF
+rm -f /etc/systemd/system/apache2.service.d/override.conf
+rmdir /etc/systemd/system/apache2.service.d 2>/dev/null || true
 systemctl daemon-reload
 systemctl restart apache2
 
-log_step 10 "Application des permissions"
+log_step 12 "Application des permissions"
 chown -R root:www-data "${OPT_DIR}"
-find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true
-[ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
 chmod 755 "${OPT_DIR}" "${OPT_DIR}/scripts"
+find "${OPT_DIR}/scripts" "${OPT_DIR}/wol" -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
+chown root:"${SVC_USER}" "${OPT_DIR}/scripts/deploy_ssh.sh"
+chmod 750 "${OPT_DIR}/scripts/deploy_ssh.sh"
+[ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
 [ -f "${OPT_DIR}/refresh_server.py" ] && chmod 755 "${OPT_DIR}/refresh_server.py" || true
-chmod -R 777 "${OPT_DIR}/data"
-chmod g+s "${OPT_DIR}/data"
+[ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && chmod 644 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
+[ -f "${OPT_DIR}/update_lstatus.py" ] && chmod 750 "${OPT_DIR}/update_lstatus.py"
+chown -R www-data:www-data "${OPT_DIR}/data"
+find "${OPT_DIR}/data" -type d -exec chmod 2775 {} +
+find "${OPT_DIR}/data" -type f -exec chmod 664 {} +
+usermod -aG www-data "${SVC_USER}" 2>/dev/null || true
 mkdir -p "${OPT_DIR}/history"
 touch "${OPT_DIR}/history/alerts.csv"
 chown -R root:www-data "${OPT_DIR}/history"
 chmod 2770 "${OPT_DIR}/history"
 find "${OPT_DIR}/history" -type f \( -name "*.json" -o -name "*.csv" \) -exec chmod 664 {} +
-chmod 640 "${OPT_DIR}/secret.key"
-[ -d "${OPT_DIR}/wol" ] && chmod -R 755 "${OPT_DIR}/wol"
-[ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && chmod 644 "${OPT_DIR}/lib"/*.py 2>/dev/null || true
-for logfile in history.log mailing.log notification.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do [ ! -f "${LOG_DIR}/${logfile}" ] && touch "${LOG_DIR}/${logfile}"; done
+for logfile in history.log mailing.log notification.log refresh_server.log save_servers.log update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log update_ubuntu.log update_uptime.log update_windows.log; do
+    [ -f "${LOG_DIR}/${logfile}" ] || touch "${LOG_DIR}/${logfile}"
+done
 chown -R www-data:www-data "${LOG_DIR}"
 chmod 2775 "${LOG_DIR}"
 chmod 664 "${LOG_DIR}"/*.log 2>/dev/null || true
@@ -287,25 +334,23 @@ chown -R www-data:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_D
 chmod -R 750 "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 chown root:www-data "${AUTH_CONFIG}"
 chmod 640 "${AUTH_CONFIG}"
-if [ -f "${OPT_DIR}/data/accounts.json" ]; then
-    LUSER="$(jq -r '.local_user // empty' "${OPT_DIR}/data/accounts.json" 2>/dev/null)"
-    [ -n "${LUSER}" ] && id "${LUSER}" &>/dev/null && usermod -aG www-data "${LUSER}"
-fi
 
-log_step 11 "Configuration de Sudoers"
+log_step 13 "Configuration de Sudoers"
 cat > "${SUDOERS_FILE}" <<'EOF'
-www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/collect.sh
-www-data ALL=(ALL) NOPASSWD: /opt/supervision/scripts/history.sh
-www-data ALL=(ALL) NOPASSWD: /usr/bin/fping
-www-data ALL=(ALL) NOPASSWD: /usr/bin/wakeonlan
-www-data ALL=(ALL) NOPASSWD: /opt/supervision/venv/bin/python /opt/supervision/refresh_server.py *
-www-data ALL=(ALL) NOPASSWD: /usr/bin/sshpass, /usr/bin/ssh-copy-id, /usr/bin/ssh, /usr/bin/ssh-keygen, /bin/mkdir, /usr/bin/mkdir, /bin/rm, /usr/bin/rm, /bin/cat, /usr/bin/cat, /usr/bin/test, /bin/test, /bin/chmod, /usr/bin/chmod, /bin/chown, /usr/bin/chown, /usr/sbin/usermod
+# Déploiement de la clé SSH : exécuté uniquement en tant que "neovision"
+www-data ALL=(neovision) NOPASSWD: /opt/supervision/scripts/deploy_ssh.sh
+# Scripts de collecte / historique (root requis pour fping/ICMP, etc.)
+www-data ALL=(root) NOPASSWD: /opt/supervision/scripts/collect.sh
+www-data ALL=(root) NOPASSWD: /opt/supervision/scripts/history.sh
+www-data ALL=(root) NOPASSWD: /usr/bin/fping
+www-data ALL=(root) NOPASSWD: /usr/bin/wakeonlan
+www-data ALL=(root) NOPASSWD: /opt/supervision/venv/bin/python /opt/supervision/refresh_server.py *
 EOF
 chmod 440 "${SUDOERS_FILE}"
 visudo -cf "${SUDOERS_FILE}"
 
-log_step 12 "Configuration de Cron"
-cat <<'EOF' | crontab -
+log_step 14 "Configuration de Cron (utilisateur ${SVC_USER})"
+cat <<'EOF' | crontab -u "${SVC_USER}" -
 MAILTO=""
 * * * * * /usr/bin/php /opt/supervision/mailing/notification.php >> /var/log/supervision/notification.log 2>&1
 * * * * * /bin/bash -c '/opt/supervision/venv/bin/python /opt/supervision/history/history.py & /opt/supervision/venv/bin/python /opt/supervision/update_ping.py & /opt/supervision/venv/bin/python /opt/supervision/update_switchs.py & /opt/supervision/venv/bin/python /opt/supervision/update_wifi.py & /opt/supervision/venv/bin/python /opt/supervision/update_others.py & wait; /opt/supervision/venv/bin/python /opt/supervision/build_dashboard.py' >/dev/null 2>&1
@@ -319,8 +364,12 @@ MAILTO=""
 1 0 * * * /opt/supervision/venv/bin/python /opt/supervision/clean_json.py >/dev/null 2>&1
 1 0 1 * * /usr/bin/python3 /opt/supervision/clean_history.py >/dev/null 2>&1
 EOF
+if crontab -l 2>/dev/null | grep -q '/opt/supervision/'; then
+    crontab -l | grep -v '/opt/supervision/' | crontab - || true
+    log_info "Anciennes tâches NeoVision retirées de la crontab root."
+fi
 
-log_step 13 "Configuration de Logrotate"
+log_step 15 "Configuration de Logrotate"
 cat > /etc/logrotate.d/neovision <<'EOF'
 /var/log/supervision/*.log {
     daily
@@ -334,13 +383,13 @@ cat > /etc/logrotate.d/neovision <<'EOF'
 EOF
 chmod 644 /etc/logrotate.d/neovision
 
-log_step 14 "Première collecte"
+log_step 16 "Première collecte"
 if [ -f "${OPT_DIR}/scripts/collect.sh" ]; then
-    bash "${OPT_DIR}/scripts/collect.sh" || log_warn "La première collecte a retourné un code d'avertissement."
+    sudo -u "${SVC_USER}" bash "${OPT_DIR}/scripts/collect.sh" || log_warn "La première collecte a retourné un code d'avertissement."
 fi
 
 IP_SRV="$(hostname -I | awk '{print $1}')"
-log_step 15 "Installation terminée"
+log_step 17 "Installation terminée"
 echo -e "\n${GREEN}======================================================================${NC}\n${GREEN}               NEOVISION EST PRÊT À L'EMPLOI !                       ${NC}\n${GREEN}======================================================================${NC}"
 echo -e " Interface Web : ${CYAN}https://${IP_SRV}/${NC}"
 if [ "${AUTH_CHOICE}" = "1" ]; then
@@ -349,8 +398,6 @@ else
     echo -e " Authentification : ${YELLOW}LDAP / Active Directory${NC}"
     echo -e " Compte local de secours : ${YELLOW}${LOCAL_USERNAME}${NC} (désactivé)"
 fi
-echo " Clé SSH publique pour agents distants :"
-if [ -f /root/.ssh/id_ed25519.pub ]; then cat /root/.ssh/id_ed25519.pub
-elif [ -f /root/.ssh/id_rsa.pub ]; then cat /root/.ssh/id_rsa.pub
-fi
+echo " Clé SSH publique pour agents distants (compte ${SVC_USER}) :"
+cat "${SVC_HOME}/.ssh/id_ed25519.pub"
 echo -e "${GREEN}======================================================================${NC}\n"
