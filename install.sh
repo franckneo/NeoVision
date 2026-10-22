@@ -296,9 +296,9 @@ chmod 755 "${OPT_DIR}"
 find "${OPT_DIR}" -maxdepth 1 -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
 chmod 755 "${OPT_DIR}/scripts"
 find "${OPT_DIR}" -maxdepth 1 -type f -name "*.sh" -exec chmod 750 {} + 2>/dev/null || true
-if [ -f "${OPT_DIR}/scripts/deploy_ssh.sh" ]; then
-    chown root:"${SVC_USER}" "${OPT_DIR}/scripts/deploy_ssh.sh"
-    chmod 750 "${OPT_DIR}/scripts/deploy_ssh.sh"
+if [ -f "${OPT_DIR}/deploy_ssh.sh" ]; then
+    chown root:"${SVC_USER}" "${OPT_DIR}/deploy_ssh.sh"
+    chmod 750 "${OPT_DIR}/deploy_ssh.sh"
 else
     log_warn "deploy_ssh.sh absent : l'envoi de clé ne fonctionnera pas."
 fi
