@@ -11,7 +11,7 @@ if(!ip||!remote_user||!password){alert(t('alert_fill_wol_fields',"Veuillez rempl
 btnDeployWol.disabled=true;
 wolConsole.textContent="[1/3] "+t('log_ssh_deploy_start',"Connexion SSH et déploiement de la clé...")+"\n";
 try{
-const res=await fetch('deploy_wol_relay.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,ip,subnets,remote_user,password,local_user:window.LOCAL_SUPERVISOR_USER||''})}),data=await res.json();
+const res=await fetch('deploy_wol_relay.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,ip,subnets,remote_user,password})}),data=await res.json();
 if(data.success){wolConsole.textContent+="[✓] "+(data.message||t('msg_success',"Succès !"))+"\n";setTimeout(()=>{location.reload();},1500);}else{wolConsole.textContent+="[✗] "+t('msg_error',"ERREUR : ")+(data.error||t('msg_failed',"Échec"))+"\n";btnDeployWol.disabled=false;}
 }catch(e){wolConsole.textContent+="[✗] "+t('msg_network_error',"Erreur de communication avec le serveur.")+"\n";btnDeployWol.disabled=false;}
 };
@@ -37,10 +37,10 @@ tr.innerHTML=`<td><input type="text" class="table-input win-name" placeholder="e
 tbody.appendChild(tr);
 }
 document.getElementById('btnSaveAccounts')?.addEventListener('click',function(){
-const localUser=document.getElementById('inputLocalSupervisorUser').value.trim(),sshAccounts=[],winrmAccounts=[];
+const sshAccounts=[],winrmAccounts=[];
 document.querySelectorAll('#tableSshAccounts tbody tr').forEach(row=>{const id=row.dataset.sshId||'',name=row.querySelector('.ssh-name').value.trim(),user=row.querySelector('.ssh-user').value.trim();if(user)sshAccounts.push({id,name,user});});
 document.querySelectorAll('#tableWinrmAccounts tbody tr').forEach(row=>{const id=row.dataset.winId||'',name=row.querySelector('.win-name').value.trim(),domain=row.querySelector('.win-domain').value.trim(),user=row.querySelector('.win-user').value.trim(),newPwd=row.querySelector('.win-pwd').value,encPwd=row.dataset.encPassword||'';if(user)winrmAccounts.push({id,name,domain,user,new_password:newPwd,enc_password:encPwd});});
-fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_all',local_user:localUser,ssh_accounts:sshAccounts,winrm_accounts:winrmAccounts})}).then(r=>r.json()).then(data=>{
+fetch('ajax_accounts.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_all',ssh_accounts:sshAccounts,winrm_accounts:winrmAccounts})}).then(r=>r.json()).then(data=>{
 if(data.success){alert(t('alert_accounts_saved','Comptes enregistrés avec succès !'));location.reload();}else{alert(t('msg_error','Erreur : ')+(data.error||t('msg_cannot_save',"Impossible d'enregistrer")));}
 }).catch(err=>alert(t('msg_network_error','Erreur réseau.')));
 });
@@ -161,7 +161,7 @@ if(data.success){if(st){st.textContent='Clé générée avec succès';st.style.c
 else{if(st){st.textContent=data.error||'Erreur génération';st.style.color='#f85149';}}
 }catch(e){if(st){st.textContent='Erreur réseau';st.style.color='#f85149';}}
 });
-const sshModal=document.getElementById("sshModal"),sshConsole=document.getElementById("sshConsole"),sshTargetSpan=document.getElementById("sshModalTarget"),sshIpInput=document.getElementById("sshInputIp"),sshUserInput=document.getElementById("sshInputUser"),sshPassInput=document.getElementById("sshInputPassword"),sshLocalUserInput=document.getElementById("sshInputLocalUser"),sshProfileSelect=document.getElementById("sshProfileSelect"),btnRunSsh=document.getElementById("btnRunSsh");
+const sshModal=document.getElementById("sshModal"),sshConsole=document.getElementById("sshConsole"),sshTargetSpan=document.getElementById("sshModalTarget"),sshIpInput=document.getElementById("sshInputIp"),sshUserInput=document.getElementById("sshInputUser"),sshPassInput=document.getElementById("sshInputPassword"),sshProfileSelect=document.getElementById("sshProfileSelect"),btnRunSsh=document.getElementById("btnRunSsh");
 let currentSshRow=null;
 document.addEventListener('click',e=>{
 const btn=e.target.closest('.btn-ssh-key');
@@ -179,12 +179,12 @@ const bCloseSsh=document.getElementById('btnCloseSsh'),bHeaderCloseSsh=document.
 if(bCloseSsh)bCloseSsh.onclick=closeSshModal;
 if(bHeaderCloseSsh)bHeaderCloseSsh.onclick=closeSshModal;
 if(btnRunSsh)btnRunSsh.onclick=async()=>{
-const ip=sshIpInput.value.trim(),local_user=sshLocalUserInput?sshLocalUserInput.value.trim():(window.LOCAL_SUPERVISOR_USER||''),user=sshUserInput.value.trim(),password=sshPassInput.value;
+const ip=sshIpInput.value.trim(),user=sshUserInput.value.trim(),password=sshPassInput.value;
 if(!password){alert(t('alert_fill_ssh_password','Veuillez saisir le mot de passe distant.'));return;}
 btnRunSsh.disabled=true;
-sshConsole.textContent="[1/3] "+t('log_ssh_step1',"Vérification de la clé locale ({user})...").replace('{user}',local_user)+"\n";
+sshConsole.textContent="[1/3] "+t('log_ssh_step1',"Vérification de la clé locale (neovision)...")+"\n";
 try{
-const res=await fetch('deploy_ssh_key.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip,local_user,user,password})}),data=await res.json();
+const res=await fetch('deploy_ssh_key.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip,user,password})}),data=await res.json();
 if(data.success){sshConsole.textContent+="[2/3] "+t('log_ssh_step2',"Connexion à {ip} via {user}...").replace('{ip}',ip).replace('{user}',user)+"\n[3/3] "+t('log_ssh_step3',"Clé publique injectée avec succès !")+"\n\n[✓] "+data.message;if(currentSshRow)currentSshRow.querySelector('.input-srv-user').value=user;}
 else{sshConsole.textContent+=(data.output?"\n"+data.output:"")+"\n[✗] "+t('msg_error',"ERREUR : ")+(data.error||t('log_ssh_failed',"Échec du déploiement"));}
 }catch(err){sshConsole.textContent+="[✗] "+t('msg_network_error',"Erreur de communication avec le serveur.");}
