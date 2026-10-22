@@ -202,9 +202,8 @@ $mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' =
 </div>
 <p><?= __('accounts_desc', 'Définissez les comptes utilisés pour déployer les clés SSH et pour la connexion WinRM aux serveurs Windows.') ?></p>
 <div class="accounts-box">
-<h3>⚙️ <?= __('local_supervisor_account', 'Compte local de supervision') ?></h3>
-<label><strong><?= __('local_system_user_label', 'Utilisateur système local (Source SSH) :') ?></strong></label>
-<input type="text" id="inputLocalSupervisorUser" class="table-input input-local-user" value="<?= htmlspecialchars($localSupervisorUser) ?>" placeholder="ex: user ou root">
+<h3>⚙️ <?= __('local_supervisor_account', 'Clé SSH de supervision') ?></h3>
+<p>Le compte système <code>neovision</code> et sa clé <code>/var/lib/neovision/.ssh/id_ed25519</code> sont utilisés pour tous les accès SSH.</p>
 <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
 <button type="button" id="btnCheckSshKey" class="btn btn-blue" style="padding:4px 10px;font-size:12px;">Vérifier clé SSH</button>
 <button type="button" id="btnGenSshKey" class="btn btn-red" style="padding:4px 10px;font-size:12px;">Générer clé SSH (ed25519)</button>
