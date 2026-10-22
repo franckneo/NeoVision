@@ -27,7 +27,7 @@ if (strpos($password, "\n") !== false || strpos($password, "\r") !== false) {
     exit();
 }
 $pubKeyPath = '/var/lib/neovision/.ssh/id_ed25519.pub';
-$script     = '/opt/supervision/scripts/deploy_ssh.sh';
+$script     = '/opt/supervision/deploy_ssh.sh';
 $logs = [];
 $logs[] = "[*] " . sprintf(__('ssh_deploying_to', 'Déploiement de la clé vers %s@%s...'), $remoteUser, $ip);
 $cmd = ['/usr/bin/sudo', '-n', '-u', 'neovision', $script, $ip, $remoteUser];
