@@ -88,6 +88,10 @@ chmod 644 "${SVC_HOME}/.ssh/id_ed25519.pub"
 log_step 5 "Activation des modules Apache"
 a2enmod rewrite ssl headers -q
 sed -i 's/^session.gc_maxlifetime = .*/session.gc_maxlifetime = 28800/' /etc/php/*/*/php.ini 2>/dev/null || true
+echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf
+a2enconf servername -q
+echo "pcre.jit=0" > /etc/php/*/mods-available/pcre-jit.ini 2>/dev/null || true
+phpenmod pcre-jit 2>/dev/null || true
 
 log_step 6 "Déploiement du backend"
 if [ -d "${SCRIPT_DIR}/opt/supervision" ]; then
@@ -286,7 +290,6 @@ systemctl daemon-reload
 systemctl restart apache2
 
 log_step 11 "Application des permissions"
-# Racine et scripts : root propriétaire, www-data peut lire mais ne peut rien modifier
 chown root:www-data "${OPT_DIR}"
 chmod 755 "${OPT_DIR}"
 chown -R root:www-data "${OPT_DIR}/scripts" "${OPT_DIR}/wol" 2>/dev/null || true
@@ -298,27 +301,24 @@ if [ -f "${OPT_DIR}/scripts/deploy_ssh.sh" ]; then
 else
     log_warn "deploy_ssh.sh absent : l'envoi de clé ne fonctionnera pas."
 fi
-[ -d "${OPT_DIR}/mailing" ] && find "${OPT_DIR}/mailing" -type d -exec chmod 750 {} + && find "${OPT_DIR}/mailing" -type f -exec chmod 640 {} +
+if [ -d "${OPT_DIR}/mailing" ]; then
+    chown root:www-data "${OPT_DIR}/mailing"
+    chmod 750 "${OPT_DIR}/mailing"
+    find "${OPT_DIR}/mailing" -type f -name "*.php" -exec chown root:www-data {} +
+    find "${OPT_DIR}/mailing" -type f -name "*.php" -exec chmod 640 {} +
+fi
 [ -f "${OPT_DIR}/refresh_server.py" ] && chmod 755 "${OPT_DIR}/refresh_server.py"
 [ -d "${OPT_DIR}/lib" ] && chmod 755 "${OPT_DIR}/lib" && find "${OPT_DIR}/lib" -type f -name "*.py" -exec chmod 644 {} +
 [ -f "${OPT_DIR}/update_lstatus.py" ] && chmod 750 "${OPT_DIR}/update_lstatus.py"
-
-# Clé de chiffrement : lisible par neovision et www-data uniquement
 chown "${SVC_USER}:www-data" "${SECRET_KEY_FILE}"
 chmod 640 "${SECRET_KEY_FILE}"
-
-# Données : www-data doit pouvoir écrire (fichiers JSON, temp, historique)
 chown -R www-data:www-data "${OPT_DIR}/data"
 find "${OPT_DIR}/data" -type d -exec chmod 2775 {} +
 find "${OPT_DIR}/data" -type f -exec chmod 664 {} +
-
-# Historique : même logique que data
 mkdir -p "${OPT_DIR}/data/history"
 touch "${OPT_DIR}/data/history/alerts.csv"
 chown -R www-data:www-data "${OPT_DIR}/data/history"
 find "${OPT_DIR}/data/history" -type f \( -name "*.json" -o -name "*.csv" \) -exec chmod 664 {} +
-
-# Journaux
 for logfile in history.log mailing.log notification.log refresh_server.log save_servers.log \
     update_disks.log update_lstatus.log update_ping.log update_ram.log update_status.log \
     update_ubuntu.log update_uptime.log update_windows.log; do
@@ -327,13 +327,9 @@ done
 chown -R www-data:www-data "${LOG_DIR}"
 chmod 2775 "${LOG_DIR}"
 chmod 664 "${LOG_DIR}"/*.log 2>/dev/null || true
-
-# Interface web : lecture seule pour www-data, Apache doit pouvoir lire
 chown -R root:www-data "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" 2>/dev/null || true
 find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type d -exec chmod 755 {} + 2>/dev/null || true
 find "${WWW_DIR}/supervision" "${WWW_DIR}/common" "${WWW_DIR}/assets" -type f -exec chmod 644 {} + 2>/dev/null || true
-
-# Configuration d'authentification : lecture pour www-data, pas d'écriture
 chown root:www-data "${AUTH_CONFIG}"
 chmod 640 "${AUTH_CONFIG}"
 
