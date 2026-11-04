@@ -189,13 +189,13 @@ foreach ($servers as $s) {
     if (!$isGloballyEnabled) continue;
     if (!isWithinTimeRange($sCfg['time_start'] ?? '', $sCfg['time_end'] ?? '')) continue;
     $emails = $sCfg['emails'] ?? [];
-    $remindInterval = isset($sCfg['interval']) && $sCfg['interval'] !== '' 
-        ? (int)$sCfg['interval'] 
+    $remindInterval = isset($sCfg['interval']) && $sCfg['interval'] !== ''
+        ? (int)$sCfg['interval']
         : (int)($config['reminder_interval'] ?? 0);
     if (!empty($sCfg['offline_enabled'])) {
         $loss = $s['ping_loss'] ?? 0;
-        $critLoss = $sCfg['ping']['crit'] ?? $sCfg['max_loss'] ?? 100;
-        if ($loss >= $critLoss) {
+        $critLoss = (int)($sCfg['ping']['crit'] ?? $sCfg['max_loss'] ?? 0);
+        if ($loss > $critLoss) {
             $newState['ping'][$name] = true;
             if (shouldSendServerAlert("ping:{$name}", $remindInterval, $newState)) {
                 queueAlert($emails, 'ping_down', ['name' => $name, 'losses' => $loss, 'maxLoss' => $critLoss], $userChannels);
@@ -294,17 +294,21 @@ foreach ($networkFiles as $netType => $nFile) {
         $netItems = $rawNet;
     }
     $remindInterval = (int)($netConfig['reminder_intervals'][$netType] ?? 0);
+	$netStateFile = "/opt/supervision/data/network_{$netType}_state.json";
+    $netState = json_decode(@file_get_contents($netStateFile), true) ?: [];
     foreach ($netItems as $item) {
         if (!is_array($item)) continue;
         $dName = $item['name'] ?? '';
         if ($dName === '') continue;
         $dCfg = $netConfig[$netType][$dName] ?? [];
         $isSnmp = strtolower((string)($item['type'] ?? '')) === 'snmp';
-        $isConfigured = !empty($dCfg['enabled']) || !empty($dCfg['ping_enabled']) || !empty($dCfg['warning_enabled']) || !empty($dCfg['critical_enabled']);
-        if (!$isConfigured || !isWithinTimeRange($dCfg['time_start'] ?? '', $dCfg['time_end'] ?? '')) continue;
+		if (isset($dCfg['enabled']) && !$dCfg['enabled']) continue;
+        if ((empty($dCfg['ping_enabled']) && empty($dCfg['warning_enabled']) && empty($dCfg['critical_enabled'])) || !isWithinTimeRange($dCfg['time_start'] ?? '', $dCfg['time_end'] ?? '')) continue;
         $emails = $dCfg['emails'] ?? [];
         $status = strtolower((string)($item['status'] ?? 'down'));
-        $isDown = ($status === 'down' || $status === 'offline' || $status === 'critical');
+		$maxLoss = (int)($dCfg['max_loss'] ?? 0);
+        $failures = (int)($item['failures_count'] ?? $netState[$dName]['failures_count'] ?? 1);
+        $isDown = ($status === 'down' || $status === 'offline' || $status === 'critical') && ($failures > $maxLoss);
         $ip = $item['ip'] ?? '';
         $alertKey = "net:{$netType}:{$dName}";
         if ($isDown) {
