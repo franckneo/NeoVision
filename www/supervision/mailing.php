@@ -25,6 +25,8 @@ foreach ($rawList as $k => $srv) {
 $config = json_decode(@file_get_contents($configFile), true) ?: [];
 $netConfig = json_decode(@file_get_contents($netConfigFile), true) ?: [];
 $userChannels = json_decode(@file_get_contents($channelsFile), true) ?: [];
+$as400ConfigFile = '/opt/supervision/data/as400_alert_config.json';
+$as400Config = json_decode(@file_get_contents($as400ConfigFile), true) ?: [];
 $netCategories = ['switchs' => 'tab-switchs', 'aps' => 'tab-aps', 'others' => 'tab-others'];
 function notif_h($value): string { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
 function getDiskDisplayName($diskName) {
@@ -32,6 +34,18 @@ function getDiskDisplayName($diskName) {
     return (strlen($diskName) > 20) ? basename($diskName) : $diskName;
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['global_settings'])) {
+        $config['reminder_interval'] = max(0, (int)($_POST['reminder_interval_servers'] ?? 0));
+        $netConfig['reminder_interval_switchs'] = max(0, (int)($_POST['reminder_interval_switchs'] ?? 0));
+        $netConfig['reminder_interval_aps'] = max(0, (int)($_POST['reminder_interval_aps'] ?? 0));
+        $netConfig['reminder_interval_others'] = max(0, (int)($_POST['reminder_interval_others'] ?? 0));
+        $as400Config['reminder_interval'] = max(0, (int)($_POST['reminder_interval_as400'] ?? 0));
+        file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        file_put_contents($netConfigFile, json_encode($netConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        file_put_contents('/opt/supervision/data/as400_alert_config.json', json_encode($as400Config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        header('Location: mailing.php');
+        exit();
+    }
     $action = (string)($_POST['action'] ?? '');
     if ($action === 'save_channels') {
         $channelsData = $_POST['channels'] ?? [];
@@ -73,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (isset($_POST['as400']) && is_array($_POST['as400'])) {
         $as400Data = [];
+        if (isset($as400Config['reminder_interval'])) $as400Data['reminder_interval'] = (int)$as400Config['reminder_interval'];
         foreach (range(0, 7) as $level) {
             $levelData = $_POST['as400'][$level] ?? [];
             $emailsRaw = is_array($levelData) ? (string)($levelData['emails'] ?? '') : '';
@@ -81,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         file_put_contents('/opt/supervision/data/as400_alert_config.json', json_encode($as400Data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
     }
     if (isset($_POST['global_settings'])) {
-        $config['reminder_interval'] = max(0, (int)($_POST['reminder_interval'] ?? 0));
+        $config['reminder_interval'] = max(0, (int)($_POST['reminder_interval_servers'] ?? $_POST['reminder_interval'] ?? 0));
         file_put_contents($configFile, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
         if (!isset($netConfig['reminder_intervals']) || !is_array($netConfig['reminder_intervals'])) {
             $netConfig['reminder_intervals'] = [];
@@ -105,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $config[$name] = [];
             }
             $emailsRaw = (string)($data['emails'] ?? '');
+            $config[$name]['max_loss'] = max(0, min(100, (int)($data['max_loss'] ?? 0)));
             $config[$name]['emails'] = array_values(array_filter(array_map('trim', explode(',', $emailsRaw)), static fn($v) => $v !== ''));
             $config[$name]['time_start'] = preg_match('/^\d{2}:\d{2}$/', (string)($data['start'] ?? '')) ? $data['start'] : '08:00';
             $config[$name]['time_end'] = preg_match('/^\d{2}:\d{2}$/', (string)($data['end'] ?? '')) ? $data['end'] : '20:00';
@@ -162,6 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $emailsArr = array_values(array_filter(array_map('trim', explode(',', $emailsRaw)), static fn($v) => $v !== ''));
                 if (!isset($netConfig[$type][$devName]) || !is_array($netConfig[$type][$devName])) $netConfig[$type][$devName] = [];
                 $netConfig[$type][$devName]['emails'] = $emailsArr;
+                $netConfig[$type][$devName]['enabled'] = $netConfig[$type][$devName]['enabled'] ?? true;
                 $netConfig[$type][$devName]['time_start'] = $data['start'] ?? '08:00';
                 $netConfig[$type][$devName]['time_end'] = $data['end'] ?? '20:00';
                 $netConfig[$type][$devName]['ping_enabled'] = isset($data['ping']);
@@ -185,9 +202,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    foreach (array_merge($netCategories, ['wifis' => 'tab-wifis']) as $type => $tabId) {
+    foreach ($netCategories as $type => $tabId) {
         $jsonFile = "/opt/supervision/data/network_{$type}.json";
-	if (!file_exists($jsonFile)) continue;
+        if (!file_exists($jsonFile)) continue;
         $rawNetData = json_decode(file_get_contents($jsonFile), true) ?: [];
         $validDevices = [];
         if (isset($rawNetData['sites'])) {
@@ -245,7 +262,7 @@ sort($allEmailsFound);
 <title><?= __('mailing_page_title', 'Configuration Alertes') ?></title>
 <link rel="stylesheet" href="/assets/style.css?v=5">
 </head>
-<body class="mailing-page <?= !empty($isDark) ? 'dark-mode' : '' ?>">
+<body class="mailing-page <?= (!empty($_COOKIE['darkMode']) && $_COOKIE['darkMode'] === 'enabled') ? 'dark-mode' : '' ?>">
 <div class="header">
     <h1><?= __('mailing_main_title', 'Configuration des alertes') ?></h1>
     <div class="header-buttons">
@@ -287,6 +304,7 @@ sort($allEmailsFound);
     $serverIp = $s['ip'] ?? '-';
     $sType = strtolower($s['type'] ?? 'linux');
     $c = $config[$name] ?? [];
+    $serverMaxLoss = (int)($c['max_loss'] ?? 0);
     $isGlobalActive = $c['global_enabled'] ?? true;
     $diskJsonFile = "/opt/supervision/data/{$name}_disks.json";
     $detectedDisks = [];
@@ -368,6 +386,7 @@ sort($allEmailsFound);
                 </div>
                 <div class="form-section">
                     <h3><?= __('section_thresholds', 'Seuils') ?></h3>
+                    <div class="form-group"><label><?= __('lbl_max_packet_loss', 'Perte max (paquets)') ?></label><input type="number" name="servers[<?=notif_h($name)?>][max_loss]" value="<?=$serverMaxLoss?>" min="0" max="100" class="input-number-sm"></div>
                     <?php if(!empty($detectedDisks)): ?>
                         <?php foreach($detectedDisks as $diskIndex => $diskEntry):
                             $diskName = is_array($diskEntry) && isset($diskEntry['name']) ? (string)$diskEntry['name'] : (string)$diskIndex;
@@ -657,32 +676,27 @@ sort($allEmailsFound);
                 <h2><?= __('modal_server_settings_title', 'Paramètres des rappels d\'alertes') ?></h2>
                 <button type="button" class="btn btn-gray" onclick="closeModal('modal_server_settings')"><?= __('btn_close', 'Fermer') ?></button>
             </div>
-            <div class="reminder-settings-list">
+<div class="reminder-settings-list">
                 <div class="reminder-row">
                     <label>🖥️ <?= __('tab_servers', 'Serveurs') ?> :</label>
-		    <div class="reminder-input-group">
-			<input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
-                </div></div>
+                    <div class="reminder-input-group"><input type="number" min="0" name="reminder_interval_servers" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span></div>
+                </div>
                 <div class="reminder-row">
                     <label>🔀 <?= __('tab_switches', 'Switchs') ?> :</label>
-                    <div class="reminder-input-group"> 
-                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
-                </div></div>
+                    <div class="reminder-input-group"><input type="number" min="0" name="reminder_interval_switchs" value="<?= (int)($netConfig['reminder_intervals']['switchs'] ?? $config['reminder_interval'] ?? 0) ?>"><span>min</span></div>
+                </div>
                 <div class="reminder-row">
                     <label>📡 <?= __('tab_aps', 'Bornes Wi-Fi') ?> :</label>
-                    <div class="reminder-input-group"> 
-                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
-                </div></div>
+                    <div class="reminder-input-group"><input type="number" min="0" name="reminder_interval_aps" value="<?= (int)($netConfig['reminder_intervals']['aps'] ?? $config['reminder_interval'] ?? 0) ?>"><span>min</span></div>
+                </div>
                 <div class="reminder-row">
                     <label>⚙️ <?= __('tab_others', 'Autres') ?> :</label>
-                    <div class="reminder-input-group"> 
-                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
-                </div></div>
+                    <div class="reminder-input-group"><input type="number" min="0" name="reminder_interval_others" value="<?= (int)($netConfig['reminder_intervals']['others'] ?? $config['reminder_interval'] ?? 0) ?>"><span>min</span></div>
+                </div>
                 <div class="reminder-row">
                     <label>📋 AS400 (Syslog) :</label>
-                    <div class="reminder-input-group"> 
-                        <input type="number" min="0" name="reminder_interval" value="<?= (int)($config['reminder_interval'] ?? 0) ?>"><span>min</span>
-                </div></div>
+                    <div class="reminder-input-group"><input type="number" min="0" name="reminder_interval_as400" value="<?= (int)($as400Config['reminder_interval'] ?? $config['reminder_interval'] ?? 0) ?>"><span>min</span></div>
+                </div>
             </div>
             <div class="modal-footer"><button type="submit" class="btn btn-blue"><?= __('btn_save', 'Enregistrer') ?></button></div>
         </form>
