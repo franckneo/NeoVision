@@ -283,7 +283,7 @@ def detect_network(events, state, network_config):
         history_log(f"[DEBUG] Analyse de la section réseau : {section} (inventaire chargé)")
         for name, cfg in section_cfg.items():
             if not isinstance(cfg, dict): continue
-            if not cfg.get("enabled", False) or not cfg.get("ping_enabled", False):
+	    if not cfg.get("ping_enabled", False):
                 continue
             ip = network_ip(inventory, name)
             if not ip:
