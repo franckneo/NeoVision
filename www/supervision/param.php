@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
             $groupedData[$site][] = $devEntry;
-	    $netConfigFile = '/opt/supervision/data/network_alert_config.json';
+            $netConfigFile = '/opt/supervision/data/network_alert_config.json';
             $netConfig = file_exists($netConfigFile) ? json_decode(file_get_contents($netConfigFile), true) : [];
             if (!is_array($netConfig)) $netConfig = [];
             $category = ['wifis' => 'aps', 'switchs' => 'switchs', 'others' => 'others'][$type];
@@ -86,31 +86,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         $devicesSaved = file_put_contents($filePath, json_encode($groupedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
         $alertsSaved = file_put_contents($netConfigFile, json_encode($netConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) !== false;
-	if ($devicesSaved && $alertsSaved) {
+        if ($devicesSaved && $alertsSaved) {
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'error' => "Erreur d'écriture"]);
         }
         exit();
-	} elseif ($_POST['action'] === 'test_mail_config') {
-	    $mailConfigPath = '/opt/supervision/data/mail_config.json';
-	    $mailConfig = file_exists($mailConfigPath) ? (json_decode(file_get_contents($mailConfigPath), true) ?: []) : [];
-	    $recipient = trim((string)($mailConfig['test_recipient'] ?? ''));
-	    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) { echo json_encode(['success' => false, 'error' => 'Adresse destinataire du test invalide']); exit(); }
-	    try {
-	        smtpSend($recipient, 'Test de configuration SMTP', 'Cet email confirme que la configuration SMTP fonctionne.', $mailConfig);
-	        echo json_encode(['success' => true, 'recipient' => $recipient]);
-	    } catch (Throwable $e) {
-	        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-	    }
-	    exit();
+        } elseif ($_POST['action'] === 'test_mail_config') {
+            $mailConfigPath = '/opt/supervision/data/mail_config.json';
+            $mailConfig = file_exists($mailConfigPath) ? (json_decode(file_get_contents($mailConfigPath), true) ?: []) : [];
+            $recipient = trim((string)($mailConfig['test_recipient'] ?? ''));
+            if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) { echo json_encode(['success' => false, 'error' => 'Adresse destinataire du test invalide']); exit(); }
+            try {
+                smtpSend($recipient, 'Test de configuration SMTP', 'Cet email confirme que la configuration SMTP fonctionne.', $mailConfig);
+                echo json_encode(['success' => true, 'recipient' => $recipient]);
+            } catch (Throwable $e) {
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            exit();
     } elseif ($_POST['action'] === 'save_mail_config') {
         $mailConfigPath = '/opt/supervision/data/mail_config.json';
         $mailConfig = [
             'sender_name' => trim($_POST['sender_name'] ?? ''),
             'from_email' => trim($_POST['from_email'] ?? ''),
             'reply_to' => trim($_POST['reply_to'] ?? ''),
-	    'test_recipient' => trim($_POST['test_recipient'] ?? ''),
+            'test_recipient' => trim($_POST['test_recipient'] ?? ''),
             'smtp_mode' => trim($_POST['smtp_mode'] ?? 'local'),
             'smtp_host' => trim($_POST['smtp_host'] ?? ''),
             'smtp_port' => (int)($_POST['smtp_port'] ?? 25),
@@ -200,7 +200,6 @@ $mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' =
 <button type="button" id="btnSaveAccounts" class="btn btn-red"><?= __('btn_save', 'Enregistrer') ?></button>
 </div>
 <p><?= __('accounts_desc', 'Définissez les comptes utilisés pour déployer les clés SSH et pour la connexion WinRM aux serveurs Windows.') ?></p>
-</div>
 <h3>🐧 <?= __('ssh_accounts_title', 'Comptes SSH (Ubuntu / Linux)') ?></h3>
 <table class="table-servers-config" id="tableSshAccounts">
 <thead><tr><th><?= __('col_friendly_name', 'Nom convivial') ?></th><th><?= __('col_remote_user', 'Utilisateur distant') ?></th><th><?= __('col_action', 'Action') ?></th></tr></thead>
@@ -232,6 +231,7 @@ $mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' =
 </tbody>
 </table>
 <button type="button" class="btn btn-blue" onclick="addWinrmRow()">+ <?= __('btn_add_win_account', 'Ajouter un compte Windows') ?></button>
+</div>
 </div>
 
 <div id="view-serveurs" class="view-section param-view <?= $activeTab === 'serveurs' ? '' : 'view-hidden' ?>">
@@ -300,11 +300,11 @@ $mailConfig = array_merge(['sender_name' => '', 'from_email' => '', 'reply_to' =
 <div id="view-wifis" class="view-section param-view <?= $activeTab === 'wifis' ? '' : 'view-hidden' ?>">
 <div class="stat-card">
 <h1><?= __('tab_wifi', 'Bornes Wifi') ?></h1>
-<p><?= __('wifis_desc', 'Configuration et gestion des bornes Wifi supervisées.') ?></p>
 <div class="section-header-actions">
 <button type="button" class="btn btn-gray" onclick="location.reload();"><?= __('btn_cancel', 'Annuler') ?></button>
 <button type="button" id="btnSaveWifis" class="btn btn-red" onclick="saveDevices('wifis')">💾 <?= __('btn_save', 'Enregistrer') ?></button>
 </div>
+<p><?= __('wifis_desc', 'Configuration et gestion des bornes Wifi supervisées.') ?></p>
 <table class="table-servers-config" id="tableWifis">
 <thead><tr><th><?= __('col_device_name', 'Nom de la borne') ?></th><th><?= __('col_ip_address', 'Adresse IP') ?></th><th><?= __('col_site', 'Site') ?></th><th><?= __('col_test', 'Test') ?></th><th><?= __('col_action', 'Action') ?></th></tr></thead>
 <tbody>
