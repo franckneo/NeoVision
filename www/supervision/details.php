@@ -32,7 +32,7 @@ function t(k, fallback) { return I18N[k] || fallback || k; }
 const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang === "de") ? "de-DE" : (($currentLang === "es") ? "es-ES" : (($currentLang === "it") ? "it-IT" : (($currentLang === "nl") ? "nl-NL" : (($currentLang === "pt") ? "pt-PT" : "fr-FR"))))) ?>';
 </script>
 </head>
-<body class="details <?= !empty($isDark) ? 'dark-mode' : '' ?>">
+<body class="details <?= (!empty($_COOKIE['darkMode']) && $_COOKIE['darkMode'] === 'enabled') ? 'dark-mode' : '' ?>">
 <div id="sidebar">
     <a href="all-disks.php" class="btn btn-blue all-disks-link"><?= __('btn_all_disks', 'All Disks') ?></a>
     <h2><?= __('sidebar_servers', 'Serveurs') ?></h2>
@@ -72,7 +72,7 @@ const CURRENT_LOCALE = '<?= ($currentLang === "en") ? "en-US" : (($currentLang =
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 <script src="/assets/darkmode.js"></script>
 <script>
-let ramChartInstance=null, disksChartInstance=null, currentServer=null;
+let ramChartInstance=null, disksChartInstance=null, currentServer=null, SERVER_ALERT_CONFIG=null;
 async function triggerRefresh() {
     if (!currentServer) return;
     const btn = document.getElementById("refreshBtn"), originalText = btn.textContent;
@@ -88,6 +88,7 @@ async function triggerRefresh() {
     } catch (e) { alert(t('msg_refresh_error', 'Erreur lors de l\'actualisation')); }
     finally { btn.textContent = originalText; btn.disabled = false; }
 }
+async function fetchServerAlertConfig(){if(SERVER_ALERT_CONFIG)return SERVER_ALERT_CONFIG;try{const r=await fetch('/api/data/alert_config.json?v='+Date.now());SERVER_ALERT_CONFIG=r.ok?await r.json():{};}catch(e){SERVER_ALERT_CONFIG={};}return SERVER_ALERT_CONFIG;}
 async function fetchServers(){
     try {
         const r = await fetch('/api/data/dashboard.json?v=' + Date.now());
@@ -98,49 +99,75 @@ async function fetchServers(){
     const fbData = await rFallback.json();
     return Array.isArray(fbData) ? fbData : (fbData.servers || []);
 }
-function computeServerLevel(s) {
-    if (s && s.health && typeof s.health === "object" && s.health.level) {
-        return s.health.level;
+function computeServerLevel(s,cfg){
+    if(!s)return"unknown";
+    const srvCfg=(cfg&&cfg[s.name])?cfg[s.name]:{};
+    let lvl='ok';
+    const upStr=String(s.uptime||'').toLowerCase();
+    if(upStr.includes('injoignable')||upStr.includes('unreachable'))return'critical';
+    const preHealth=(typeof s.health==='string'&&s.health)?s.health.toLowerCase():null;
+    if(preHealth==='critical')return'critical';if(preHealth==='warning')lvl='warning';
+    const se=Array.isArray(s.status?.service_errors)?s.status.service_errors:(Array.isArray(s.service_errors)?s.service_errors:[]);
+    if(se.length>0)return'critical';
+    const ramObj=Array.isArray(s.ram)&&s.ram.length?s.ram[0]:(s.ram&&typeof s.ram==='object'?s.ram:null);
+    if(ramObj&&ramObj.percent!==undefined&&ramObj.percent!==null){
+        const pct=Number(ramObj.percent),rcEn=srvCfg.ram_crit_enabled??srvCfg.ram_enabled??false,rwEn=srvCfg.ram_warn_enabled??false;
+        if(rcEn&&pct>=Number(srvCfg.ram_crit_threshold??srvCfg.ram_threshold??90))return'critical';
+        if(rwEn&&pct>=Number(srvCfg.ram_warn_threshold??80)&&lvl==='ok')lvl='warning';
     }
-    let level = "ok";
-    const pingStatus = typeof s.ping === "string" ? s.ping : s.ping?.status;
-    const consecutiveLosses = Number(s.consecutive_losses ?? 0), maxLoss = Number(s.ping_max_loss ?? 1);
-    if (s.ping_critical === true || (pingStatus === "offline" && consecutiveLosses > maxLoss)) level = "critical";
-    else if (pingStatus === "offline" && consecutiveLosses > 0) level = "warning";
-    const ramPercent = s.ram?.percent ? parseFloat(s.ram.percent) : (typeof s.ram === "number" ? s.ram : null);
-    if (ramPercent !== null && ramPercent >= 90) level = "critical";
-    if (s.disks?.disks) {
-        for (const d of Object.values(s.disks.disks)) {
-            const usedP = parseFloat(d.used_percent);
-            if (!isNaN(usedP) && usedP >= 95) { level = "critical"; break; }
+    const dObj=Array.isArray(s.disks)&&s.disks.length?s.disks:(s.disks?.disks?s.disks.disks:null);
+    if(dObj){
+        const list=Array.isArray(dObj)?dObj.map(d=>({n:d.mount||d.filesystem||d.name||d.device||"/",p:parseFloat(String(d.used_percent??d.percent??0).replace('%',''))||0})):Object.entries(dObj).map(([k,v])=>({n:k,p:parseFloat(String(v?.used_percent??v?.percent??0).replace('%',''))||0}));
+        const dCfg=srvCfg.disks||{};
+																				  
+																											   
+																	
+						 
+        for(const d of list){
+            const c=dCfg[d.n]||{},ce=c.crit_enabled??c.enabled??false,we=c.warn_enabled??false;
+            if(ce&&d.p>=Number(c.crit_threshold??c.threshold??90))return'critical';
+            if(we&&d.p>=Number(c.warn_threshold??80)&&lvl==='ok')lvl='warning';
         }
     }
-    const rebootReq = s.reboot_required || s.status?.reboot_required;
-    if (rebootReq && level !== "critical") level = "warning";
-    const services = s.services?.services || s.services;
-    if (services && typeof services === "object") {
-        for (const [serviceName, service] of Object.entries(services)) {
-            const state = typeof service === "object" ? String(service.status ?? service.state ?? "").toLowerCase() : String(service).toLowerCase();
-            const serviceOk = ["active", "running", "ok", "listening", "open"].includes(state);
-            if (!serviceOk) { level = "critical"; break; }
-            if (typeof service === "object" && service.ports) {
-                for (const portState of Object.values(service.ports)) {
-                    const portOk = ["active", "running", "ok", "listening", "open"].includes(String(portState).toLowerCase());
-                    if (!portOk) { level = "critical"; break; }
-                }
-            }
-            if (level === "critical") break;
+    if(s.status?.reboot_required||s.reboot_required)if(lvl==='ok')lvl='warning';
+    const jh=s.health&&typeof s.health==='object'?s.health.level:null;
+    if(jh==='critical')return'critical';if(jh==='warning'&&lvl==='ok')lvl='warning';
+    const rawTs=s.uptime_timestamp||s.status?.status_file_timestamp||s.status_file_timestamp;
+    if(rawTs){
+        let tsMs=NaN;
+        if(typeof rawTs==='number')tsMs=rawTs>1e11?rawTs:rawTs*1000;
+        else if(typeof rawTs==='string'){
+            const cl=rawTs.trim();
+            if(/^\d{2}\/\d{2}\/\d{4}/.test(cl)){const p=cl.split(/[\sT]+/),dp=p[0].split('/');tsMs=new Date(`${dp[2]}-${dp[1]}-${dp[0]}T${p[1]||'00:00:00'}`).getTime();}
+            else{tsMs=new Date(cl.replace(' ','T')).getTime();if(isNaN(tsMs))tsMs=new Date(cl).getTime();}
+															   
+																	   
+																															  
+															   
+				 
+			 
+											
         }
+        if(!isNaN(tsMs)){
+            const age=(Date.now()-tsMs)/60000;
+            if(age>=Number(srvCfg.uptime_crit_threshold??srvCfg.uptime_threshold??20))return'critical';
+            if(age>=Number(srvCfg.uptime_warn_threshold??15)&&lvl==='ok')lvl='warning';
+        }else return'critical';
+    }else return'critical';
+    const ping=typeof s.ping==='object'?s.ping:{status:s.ping||'unknown'};
+    if((srvCfg.offline_enabled??true)&&(ping.status==='offline'||(ping.ping_ok===false&&ping.status!=='unknown'))){
+        const cl=Number(ping.consecutive_losses??s.consecutive_losses??0),ml=Math.max(1,Number(srvCfg.max_loss??ping.ping_max_loss??s.ping_max_loss??1));
+        if(cl>=ml)return'critical';if(cl>0&&lvl==='ok')lvl='warning';
     }
-    return level;
+    return lvl;
 }
-function renderServerList(servers){
-    const ul = document.getElementById("serverList");
-    ul.innerHTML = "";
-    servers.forEach(s => {
-        const level = computeServerLevel(s);
-        ul.innerHTML += `<li style="display:flex;align-items:center;gap:6px;"><span class="dot dot-${level}" id="dot-${s.name}"></span><a href="details.php?server=${s.name}">${s.name}</a></li>`;
-    });
+async function renderServerList(servers){
+    const cfg=await fetchServerAlertConfig(),ul=document.getElementById("serverList");
+    ul.innerHTML="";
+						  
+											
+    servers.forEach(s=>{const lvl=computeServerLevel(s,cfg);ul.innerHTML+=`<li style="display:flex;align-items:center;gap:6px;"><span class="dot dot-${lvl}" id="dot-${s.name}"></span><a href="details.php?server=${s.name}">${s.name}</a></li>`;});
+	   
 }
 async function refreshAll(){
     if(!currentServer) return;
@@ -175,17 +202,17 @@ function renderStats(uptime, status) {
 function renderServices(servicesData) {
     const container = document.getElementById("servicesRow");
     if (!servicesData || !servicesData.services || Object.keys(servicesData.services).length === 0) { container.innerHTML = ""; return; }
-    const serviceNames = { 
-        'powerbi_gateway': t('service_powerbi', 'Power BI Gateway'), 
-        'powerbi': t('service_powerbi', 'Power BI Gateway'), 
-        'outlook': t('service_outlook', 'Outlook'), 
-        'stagenow': t('service_stagenow', 'StageNow Client'), 
-        'wsus_service': t('service_wsus_svc', 'Service WSUS'), 
-        'wsus_apppool': t('service_wsus_pool', 'IIS WsusPool'), 
-        'wsus_port': t('service_wsus_port', 'Port WSUS (8530)'), 
-        'kea-dhcp-server': t('service_kea', 'Kea DHCP'), 
-        'squid': t('service_squid', 'Proxy Squid'), 
-        'webmin': t('service_webmin', 'Webmin') 
+    const serviceNames = {
+        'powerbi_gateway': t('service_powerbi', 'Power BI Gateway'),
+        'powerbi': t('service_powerbi', 'Power BI Gateway'),
+        'outlook': t('service_outlook', 'Outlook'),
+        'stagenow': t('service_stagenow', 'StageNow Client'),
+        'wsus_service': t('service_wsus_svc', 'Service WSUS'),
+        'wsus_apppool': t('service_wsus_pool', 'IIS WsusPool'),
+        'wsus_port': t('service_wsus_port', 'Port WSUS (8530)'),
+        'kea-dhcp-server': t('service_kea', 'Kea DHCP'),
+        'squid': t('service_squid', 'Proxy Squid'),
+        'webmin': t('service_webmin', 'Webmin')
     };
     let html = "";
     for (const [key, service] of Object.entries(servicesData.services)) {
