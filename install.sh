@@ -358,16 +358,15 @@ cat <<'EOF' | crontab -u "${SVC_USER}" -
 MAILTO=""
 * * * * * umask 002; /usr/bin/php /opt/supervision/mailing/notification.php >> /var/log/supervision/notification.log 2>&1
 * * * * * umask 002; /bin/bash -c '/opt/supervision/venv/bin/python /opt/supervision/history/history.py & /opt/supervision/venv/bin/python /opt/supervision/update_ping.py & wait; /opt/supervision/venv/bin/python /opt/supervision/build_dashboard.py' >/dev/null 2>&1
-*/3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_ubuntu.py >/dev/null 2>&1
-*/3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_windows.py >/dev/null 2>&1
-*/10 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_uptime.py >/dev/null 2>&1
-*/15 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_ram.py >/dev/null 2>&1
-0 */1 * * * /opt/supervision/venv/bin/python /opt/supervision/update_status.py >/dev/null 2>&1
-0 */6 * * * /opt/supervision/venv/bin/python /opt/supervision/update_disks.py >/dev/null 2>&1
-1 0 * * * /opt/supervision/venv/bin/python /opt/supervision/clean_json.py >/dev/null 2>&1
-1 0 1 * * /opt/supervision/venv/bin/python /opt/supervision/clean_history.py >/dev/null 2>&1
+*/3 * * * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/update_ubuntu.py >/dev/null 2>&1
+*/3 * * * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/update_windows.py >/dev/null 2>&1
+*/10 * * * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/update_uptime.py >/dev/null 2>&1
+*/15 * * * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/update_ram.py >/dev/null 2>&1
+0 */1 * * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/update_status.py >/dev/null 2>&1
+0 */6 * * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/update_disks.py >/dev/null 2>&1
+1 0 * * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/clean_json.py >/dev/null 2>&1
+1 0 1 * * umask 002; /opt/supervision/venv/bin/python /opt/supervision/clean_history.py >/dev/null 2>&1
 EOF
-# Nettoyage des anciennes tâches NeoVision dans la crontab root
 if crontab -l 2>/dev/null | grep -q '/opt/supervision/'; then
     crontab -l | grep -v '/opt/supervision/' | crontab - || true
     log_info "Anciennes tâches NeoVision retirées de la crontab root."
