@@ -52,6 +52,7 @@ fi
 mkdir -p "${SVC_HOME}/.ssh"
 chmod 700 "${SVC_HOME}/.ssh"
 chown -R "${SVC_USER}:${SVC_USER}" "${SVC_HOME}"
+usermod -aG www-data "${SVC_USER}"
 
 log_step 3 "Création des répertoires, du venv Python et de la clé de chiffrement"
 mkdir -p "${OPT_DIR}"/{data/history,data/temp} "${LOG_DIR}" "${WWW_DIR}"/{supervision,common,assets}
@@ -355,8 +356,8 @@ visudo -cf "${SUDOERS_FILE}"
 log_step 13 "Configuration de Cron (utilisateur ${SVC_USER})"
 cat <<'EOF' | crontab -u "${SVC_USER}" -
 MAILTO=""
-* * * * * /usr/bin/php /opt/supervision/mailing/notification.php >> /var/log/supervision/notification.log 2>&1
-* * * * * /bin/bash -c '/opt/supervision/venv/bin/python /opt/supervision/history/history.py & /opt/supervision/venv/bin/python /opt/supervision/update_ping.py & wait; /opt/supervision/venv/bin/python /opt/supervision/build_dashboard.py' >/dev/null 2>&1
+* * * * * umask 002; /usr/bin/php /opt/supervision/mailing/notification.php >> /var/log/supervision/notification.log 2>&1
+* * * * * umask 002; /bin/bash -c '/opt/supervision/venv/bin/python /opt/supervision/history/history.py & /opt/supervision/venv/bin/python /opt/supervision/update_ping.py & wait; /opt/supervision/venv/bin/python /opt/supervision/build_dashboard.py' >/dev/null 2>&1
 */3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_ubuntu.py >/dev/null 2>&1
 */3 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_windows.py >/dev/null 2>&1
 */10 * * * * /opt/supervision/venv/bin/python /opt/supervision/update_uptime.py >/dev/null 2>&1
